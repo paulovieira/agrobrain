@@ -1,0 +1,15 @@
+{
+  "name": "agro-brain",
+  "script": "index.js",
+  "args": [
+    "--production",
+    "--good=false",
+    "--blipp=false"
+  ],
+  "env": {
+  },
+  "max_memory_restart" : "200M",
+  "treekill": true,
+  "restart_delay": 5000,
+  "out_file": "/dev/null"
+}
