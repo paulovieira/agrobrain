@@ -13,7 +13,7 @@ request - Request logging information. This maps to the hapi 'request' event tha
 
 module.exports = {
     ops: {
-        interval: 1*1000
+        interval: 60*1000
     },
     reporters: {}
 };
@@ -50,8 +50,8 @@ if(Config.get('good-file-ops')!=="false"){
         }, 
         {
             module: 'rotating-file-stream',
-            // rotates the file when its size exceeds n KiloBytes
-            args: [ 'ops_log', { size: '10K', path: Path.join(Config.get('rootDir'), 'logs') } ]  
+            // rotates the file when its size exceeds x KiloBytes (xK) or y MegaBytes (yM)
+            args: [ 'ops_log', { size: '1M', path: Path.join(Config.get('rootDir'), 'logs') } ]  
         }
     ];
 }

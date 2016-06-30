@@ -1,10 +1,5 @@
 module.exports.insert = function insert(mac, readings){
 
-    var names = Object.keys(readings);
-    if(names.length===0){
-        return;
-    }
-
     var sql = `
 INSERT INTO "t_raw" (
     mac, 

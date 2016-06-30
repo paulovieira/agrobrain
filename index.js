@@ -4,7 +4,8 @@ var Config = require('nconf');
 var Hoek = require('hoek');
 var Glue = require('glue');
 var Chalk = require('chalk');
-var Db = require('./database');
+var Pg = require('pg');
+//var Db = require('./database');
 
 
 process.title = Config.get('applicationTitle');
@@ -127,9 +128,6 @@ Glue.compose(manifest, glueOptions, function (err, server) {
     server.start(function(err) {
 
         Hoek.assert(!err, 'Failed server start: ' + err);
-
-        // make the server object available for the methods in the ./util/utils module
-        //Utils.registerServer(server);
         
         // show some informations about the server
         console.log(Chalk.green('================='));
@@ -138,20 +136,20 @@ Glue.compose(manifest, glueOptions, function (err, server) {
         console.log('port: ' + server.info.port);
         console.log("process.env.NODE_ENV: ", process.env.NODE_ENV);
 
-        Db.query("SELECT * FROM version()")
-            .then(function(result){
-                console.log("database: ", result[0].version);
+        Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
+
+            if (err) { throw err; }
+
+            pgClient.query('SELECT * FROM version()', function(err, result) {
+
+                done();
+                if (err) { throw err; }
+
+                console.log("database: ", result.rows[0].version);
                 console.log(Chalk.green('================='));
             });
-
-
-
-        // process.on('SIGKILL', () => {
-        //     console.log('Got SIGKILL signal.');
-        // });
+        });
         
     });
 });
-
-
 

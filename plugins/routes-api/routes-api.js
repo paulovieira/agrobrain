@@ -26,7 +26,28 @@ exports.register = function(server, options, next){
         },
         handler: function(request, reply) {
 
-            //console.log(request.query);
+/*
+
+mac=334&
+data[0][sid]=834&
+data[0][value]=23.3&
+data[0][type]=t&
+data[0][desc]=microfone_1
+
+combination of sid and type is unique
+
+curl -v -L -G -d 'mac=334&data[0][sid]=834&data[0][value]=23.3&data[0][type]=t&data[0][desc]=microfone_1' http://localhost:8000/api/v1/readings
+            
+averages:
+
+ 
+
+
+
+*/
+
+                
+            console.log(request.query);
 
             Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
 
@@ -39,6 +60,11 @@ exports.register = function(server, options, next){
 
                 mac = request.query.mac;
                 delete request.query.mac;
+
+                var names = Object.keys(request.query);
+                if(names.length===0){
+                    return reply(Boom.badRequest('No readings have been sent'));
+                }
 
                 pgClient.query(Sql.insert(mac, request.query), function(err, result) {
 

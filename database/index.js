@@ -1,3 +1,5 @@
+/*
+
 var Config = require('nconf');
 //var Promise = require('bluebird');
 var PgPromise = require('pg-promise');
@@ -40,3 +42,5 @@ module.exports.end = function(){
     console.log("All postgres connections have been released. Goodbye!");
 };
 
+
+*/
