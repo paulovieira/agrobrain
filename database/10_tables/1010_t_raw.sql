@@ -10,7 +10,7 @@ create table if not exists t_raw(
 /*
 mac is used for geolocation
 
-the combination of sid and type are enough to identify the reading 
+the combination of sid and type are enough to identify the reading (locally)
 
 description is a free text to help identify/charactereize the reading
 

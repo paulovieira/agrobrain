@@ -7,7 +7,6 @@ var Chalk = require('chalk');
 var Pg = require('pg');
 //var Db = require('./database');
 
-
 process.title = Config.get('applicationTitle');
 
 var manifest = {
@@ -68,7 +67,10 @@ var manifest = {
         {
             plugin: {
                 register: "./plugins/routes-api/routes-api.js",
-                options: { path: '/readings'}
+                options: { 
+                    aggInterval: 30  // in minutes
+                    //aggInterval: 300  // in minutes
+                }
             },
             options: {
                 routes: {  
