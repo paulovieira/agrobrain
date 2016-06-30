@@ -48,7 +48,8 @@ averages:
 
                 
             console.log(request.query);
-
+            return reply("to be done");
+            
             Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
 
                 var boom, mac;
