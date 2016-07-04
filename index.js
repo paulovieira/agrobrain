@@ -68,8 +68,12 @@ var manifest = {
             plugin: {
                 register: "./plugins/routes-api/routes-api.js",
                 options: { 
-                    aggInterval: 30  // in minutes
+                    aggInterval: Config.get('aggInterval'),  // in minutes
                     //aggInterval: 300  // in minutes
+
+                    //aggSyncInterval: 31,
+                    aggSyncInterval: Config.get('aggInterval') + 1,
+                    aggSyncMax: Config.get('aggSyncMax')
                 }
             },
             options: {

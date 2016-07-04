@@ -1,0 +1,3 @@
+-start server with pm2
+-restart server
+-is there anything to do in cron now?

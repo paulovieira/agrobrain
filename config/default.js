@@ -84,5 +84,7 @@ module.exports = {
         },
     },
 
+    aggInterval: 1,  // interval to compute aggregate data (in minutes)
+    aggSyncMax: 100  // max number of readings to send when syncing
 };
 
