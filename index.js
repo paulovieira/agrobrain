@@ -40,7 +40,8 @@ var manifest = {
 
     connections: [
         {
-            host: "localhost",
+            //host: "localhost",
+            address: Config.get('publicIp'),
             port: Config.get("port")
         }
     ],

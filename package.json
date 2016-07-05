@@ -33,6 +33,7 @@
     "nconf": "^0.8.4",
     "pg": "^6.0.1",
     "psql-wrapper": "0.0.4",
-    "rotating-file-stream": "^1.0.5"
+    "rotating-file-stream": "^1.0.5",
+    "wreck": "^8.0.0"
   }
 }

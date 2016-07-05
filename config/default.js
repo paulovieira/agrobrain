@@ -9,11 +9,16 @@ module.exports = {
     applicationTitle: 'agro-brain',
 
     host: "localhost",
-    port: 8000,
+    port: 8001,
 
     publicUri: "",  // host
-    publicPort: 8000,  // probably 80
+    publicPort: 8001,  // probably 80
     publicIp: "127.0.0.1",
+
+    clientToken: '',
+    
+    syncBaseUrl: '',
+    syncUri: '/api/v1/sync',
 
     rootDir: internals.rootDir,
 
@@ -84,7 +89,7 @@ module.exports = {
         },
     },
 
-    aggInterval: 1,  // interval to compute aggregate data (in minutes)
+    aggInterval: 30,  // interval to compute aggregate data (in minutes)
     aggSyncMax: 100  // max number of readings to send when syncing
 };
 

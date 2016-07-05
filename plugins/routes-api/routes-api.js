@@ -2,6 +2,7 @@ var Path = require('path');
 var Joi = require('joi');
 var Boom = require('boom');
 var Pg = require('pg');
+var Wreck = require('wreck');
 var Config = require('nconf');
 var Sql = require('./sql-templates');
 
@@ -17,6 +18,18 @@ internals.readingSchema = Joi.object({
     desc: Joi.string()
 });
 
+
+internals.syncUri = '/api/v1/sync';
+internals.syncOptions = {
+    baseUrl: Config.get('syncBaseUrl'),
+    timeout: 30*1000,
+    //payload: ...
+
+    json: 'force',
+    headers: {
+        'content-type': 'application/json'
+    }
+};
 
 
 internals.execAggregate = function(reply){
@@ -124,14 +137,36 @@ internals.execAggregateSync = function(reply){
             }
 
             else{
-                if(reply){
-                    return reply(result.rows)        
-                }
 
-                console.log(result.rows);
-                return;
+                var uri = Config.get('syncUri') + '?clientToken=' + Config.get('clientToken');
+                internals.syncOptions.payload = JSON.stringify(result.rows);
+
+                console.log(internals.syncOptions)
+
+                Wreck.put(uri, internals.syncOptions, function(err, response, serverPayload){
+
+                    if (err) {
+
+                        if(reply){
+                            boom = Boom.badImplementation();
+                            boom.output.payload.message = err.message;
+                            return reply(boom);
+                        }
+
+                        throw err;
+                    }
+
+                    // if statusCode === 200, update the local database
+
+                    if(reply){
+                        return reply(serverPayload);
+                    }
+
+                    console.log(serverPayload);
+                    return;
+                })
+
             }
-
         });
     });
 }
@@ -165,28 +200,28 @@ data[0][desc]=microfone_1
 
 the combination of sid and type is unique
 
-curl -v -L -G -d 'mac=999-888-777&data[0][sid]=1234&data[0][value]=10.1&data[0][type]=t&data[0][desc]=microfone_1' http://localhost:8000/api/v1/readings;
+curl -v -L -G -d 'mac=999-888-777&data[0][sid]=1234&data[0][value]=10.1&data[0][type]=t&data[0][desc]=microfone_1' http://localhost:8001/api/v1/readings;
 sleep 1;
 
-curl -v -L -G -d 'mac=999-888-777&data[0][sid]=1234&data[0][value]=20.1&data[0][type]=t&data[0][desc]=microfone_1' http://localhost:8000/api/v1/readings;
+curl -v -L -G -d 'mac=999-888-777&data[0][sid]=1234&data[0][value]=20.1&data[0][type]=t&data[0][desc]=microfone_1' http://localhost:8001/api/v1/readings;
 sleep 1;
 
-curl -v -L -G -d 'mac=999-888-777&data[0][sid]=1234&data[0][value]=80.1&data[0][type]=h&data[0][desc]=microfone_1' http://localhost:8000/api/v1/readings;
+curl -v -L -G -d 'mac=999-888-777&data[0][sid]=1234&data[0][value]=80.1&data[0][type]=h&data[0][desc]=microfone_1' http://localhost:8001/api/v1/readings;
 sleep 1;
 
-curl -v -L -G -d 'mac=999-888-777&data[0][sid]=1234&data[0][value]=3000&data[0][type]=h&data[0][desc]=microfone_1' http://localhost:8000/api/v1/readings;
+curl -v -L -G -d 'mac=999-888-777&data[0][sid]=1234&data[0][value]=3000&data[0][type]=h&data[0][desc]=microfone_1' http://localhost:8001/api/v1/readings;
 sleep 1;
 
-curl -v -L -G -d 'mac=999-888-666&data[0][sid]=1235&data[0][value]=90.1&data[0][type]=h&data[0][desc]=pt_robotics' http://localhost:8000/api/v1/readings;
+curl -v -L -G -d 'mac=999-888-666&data[0][sid]=1235&data[0][value]=90.1&data[0][type]=h&data[0][desc]=pt_robotics' http://localhost:8001/api/v1/readings;
 sleep 1;
 
-curl -v -L -G -d 'mac=999-888-666&data[0][sid]=1235&data[0][value]=99.9&data[0][type]=h&data[0][desc]=pt_robotics' http://localhost:8000/api/v1/readings;
+curl -v -L -G -d 'mac=999-888-666&data[0][sid]=1235&data[0][value]=99.9&data[0][type]=h&data[0][desc]=pt_robotics' http://localhost:8001/api/v1/readings;
 sleep 1;
 
-curl -v -L -G -d 'mac=999-888-666&data[0][sid]=1235&data[0][value]=99.9&data[0][type]=h&data[0][desc]=pt_robotics&data[1][sid]=1235&data[1][value]=20.1&data[1][type]=t&data[1][desc]=pt_robotics' http://localhost:8000/api/v1/readings;
+curl -v -L -G -d 'mac=999-888-666&data[0][sid]=1235&data[0][value]=99.9&data[0][type]=h&data[0][desc]=pt_robotics&data[1][sid]=1235&data[1][value]=20.1&data[1][type]=t&data[1][desc]=pt_robotics' http://localhost:8001/api/v1/readings;
 sleep 1;
 
-curl -v -L -G -d 'mac=999-888-666&data[0][sid]=1235&data[0][value]=4000.9&data[0][type]=h&data[0][desc]=pt_robotics&data[1][sid]=1235&data[1][value]=-40.1&data[1][type]=t&data[1][desc]=pt_robotics' http://localhost:8000/api/v1/readings;
+curl -v -L -G -d 'mac=999-888-666&data[0][sid]=1235&data[0][value]=4000.9&data[0][type]=h&data[0][desc]=pt_robotics&data[1][sid]=1235&data[1][value]=-40.1&data[1][type]=t&data[1][desc]=pt_robotics' http://localhost:8001/api/v1/readings;
 sleep 1;
 
 
@@ -238,7 +273,7 @@ curl -v -L -G -d 'mac=999-888-555&data[0][sid]=1234&data[0][value]=20.1&data[0][
                         return reply(boom);
                     }
 
-                    return reply({ newRecords: result.rowCount});
+                    return reply({ newRecords: result.rowCount, ts: new Date().toISOString() });
                 });
             });
         }
