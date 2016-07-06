@@ -177,16 +177,19 @@ exports.register = function(server, options, next){
         path: options.pathReadings || '/readings',
         method: 'GET',
         config: {
+/*
             validate: {
+
                 query: {
                     mac: Joi.string().required(),
                     data: Joi.array().items(internals.readingSchema).required()
                 },
+
                 options: {
                     allowUnknown: true
                 }
             },
-
+*/
         },
         handler: function(request, reply) {
 
