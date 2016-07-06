@@ -18,8 +18,8 @@ internals.readingSchema = Joi.object({
     desc: Joi.string()
 });
 
+internals.syncUri = Config.get('syncUri') + '?clientToken=' + Config.get('clientToken');
 
-internals.syncUri = '/api/v1/sync';
 internals.syncOptions = {
     baseUrl: Config.get('syncBaseUrl'),
     timeout: 30*1000,
@@ -32,22 +32,20 @@ internals.syncOptions = {
 };
 
 
-internals.execAggregate = function(reply){
+internals.execAggregate = function(){
 
     Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
 
         var boom;
         if (err) {
-
-            // TODO: add an informative email to the queue
-            // TODO: add some information to the file log
-
+/*
             if(reply){
                 boom = Boom.badImplementation();
                 boom.output.payload.message = err.message;
                 return reply(boom);
             }
-
+*/
+            // TODO: add to logs + email
             throw err;
         }
 
@@ -58,50 +56,23 @@ internals.execAggregate = function(reply){
             done();
 
             if (err) {
-
-                // TODO: add an informative email to the queue
-                // TODO: add some information to the file log
-
-                if(reply){
-                    boom = Boom.badImplementation();
-                    boom.output.payload.message = err.message;
-                    return reply(boom);
-                }
-
                 throw err;
             }
 
-            else{
-                var output = 'ok!';
-
-                if(reply){
-                    return reply(output);        
-                }
-
-                console.log(output);
-                return;
-            }
-
+            internals.server.log(['agg'], 'ok')
         });
     });
 };
 
-internals.execAggregateSync = function(reply){
+internals.execAggregateSync = function(){
+
+    internals.server.log(['agg-sync'], Date.now());
+    return;
 
     Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
 
-        var boom;
         if (err) {
-
-            // TODO: add an informative email to the queue
-            // TODO: add some information to the file log
-
-            if(reply){
-                boom = Boom.badImplementation();
-                boom.output.payload.message = err.message;
-                return reply(boom);
-            }
-
+            // TODO: add to logs + email
             throw err;
         }
 
@@ -112,56 +83,30 @@ internals.execAggregateSync = function(reply){
             done();
 
             if (err) {
-
-                // TODO: add an informative email to the queue
-                // TODO: add some information to the file log
-
-                if(reply){
-                    boom = Boom.badImplementation();
-                    boom.output.payload.message = err.message;
-                    return reply(boom);
-                }
-
+                // TODO: add to logs + email
                 throw err;
             }
 
             if(result.rowCount===0){
-                var output = 'nothing to sync';
-
-                if (reply){
-                    return reply(output);
-                }
-
-                console.log(output);
+                internals.server.log(['agg-sync'], 'nothing to sync');
                 return;
             }
-
             else{
 
-                var uri = Config.get('syncUri') + '?clientToken=' + Config.get('clientToken');
+                internals.syncOptions.payload = undefined;
                 internals.syncOptions.payload = JSON.stringify(result.rows);
 
+                console.log(internals.syncUri)
                 console.log(internals.syncOptions)
 
-                Wreck.put(uri, internals.syncOptions, function(err, response, serverPayload){
+                Wreck.put(internals.syncUri, internals.syncOptions, function(err, response, serverPayload){
 
                     if (err) {
-
-                        if(reply){
-                            boom = Boom.badImplementation();
-                            boom.output.payload.message = err.message;
-                            return reply(boom);
-                        }
-
                         throw err;
                     }
 
-                    // if statusCode === 200, update the local database
-
-                    if(reply){
-                        return reply(serverPayload);
-                    }
-
+                    internals.server.log(['agg-sync'], 'ok');
+                    // TODO: if statusCode === 200, update the local database
                     console.log(serverPayload);
                     return;
                 })
@@ -173,11 +118,13 @@ internals.execAggregateSync = function(reply){
 
 exports.register = function(server, options, next){
 
+    internals.server = server;
+
     server.route({
         path: options.pathReadings || '/readings',
         method: 'GET',
         config: {
-/*
+
             validate: {
 
                 query: {
@@ -189,7 +136,7 @@ exports.register = function(server, options, next){
                     allowUnknown: true
                 }
             },
-*/
+
         },
         handler: function(request, reply) {
 
@@ -307,6 +254,7 @@ curl -v -L -G -d 'mac=999-888-555&data[0][sid]=1234&data[0][value]=20.1&data[0][
         handler: function(request, reply) {
 
             internals.execAggregate(reply);
+            return reply(`[${ new Date().toISOString() }]: check the output in the console`);
         }
     });
 
@@ -315,19 +263,22 @@ curl -v -L -G -d 'mac=999-888-555&data[0][sid]=1234&data[0][value]=20.1&data[0][
 
     // aggregate sync
 
-    if(!options.aggSyncInterval){
-        throw new Error('missing options.aggSyncInterval');
-    }
+    // if(!options.aggSyncInterval){
+    //     throw new Error('missing options.aggSyncInterval');
+    // }
     if(!options.aggSyncMax){
         throw new Error('missing options.aggSyncMax');
     }
 
-    // this query doesn't change (after the plugin is registered)
+    // this query doesn't change (after the plugin is registered), so we store it in the internals
     internals.aggSyncQuery = Sql.aggregateSync(options.aggSyncMax);
-    const aggSyncInterval = options.aggSyncInterval*internals['oneMinute'];
-    setInterval(internals.execAggregateSync, aggSyncInterval);
+
+
+    //const aggSyncInterval = options.aggSyncInterval*internals['oneMinute'];
+    //setInterval(internals.execAggregateSync, aggSyncInterval);
 
     // route to manually execute the aggregate sync (for debugging only)
+/*
     server.route({
         path: options.pathAggSync || '/agg-sync',
         method: 'GET',
@@ -335,8 +286,40 @@ curl -v -L -G -d 'mac=999-888-555&data[0][sid]=1234&data[0][value]=20.1&data[0][
         },
         handler: function(request, reply) {
 
-            internals.execAggregateSync(reply);
+            internals.execAggregateSync();
+            return reply(`[${ new Date().toISOString() }]: check the output in the console`);
         }
+    });
+*/
+
+    // attach listener to the 't_agg_insert' channel from postgres; when new rows are inserted in
+    // t_agg, a trigger function will will publish an event on this channel (via pg_notify)
+
+    Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
+
+        if (err) {
+            throw err;
+        }
+
+        pgClient.query("LISTEN t_agg_insert", function(err, result) {
+
+            // important: here we shouldn't release the connection
+            // TODO: will the connection be always live?
+
+            if (err) {
+                throw err;
+            }
+
+            // pgClient.on('notification', function(msg){
+
+            //     server.log('agg-sync', msg);
+            //     internals.execAggregateSync();
+            // })
+
+            // TODO: is the callback executed only once, even if the trigger function is
+            // executed twice?
+            pgClient.on('notification', internals.execAggregateSync);
+        });
     });
 
     return next();

@@ -73,7 +73,7 @@ var manifest = {
                     //aggInterval: 300  // in minutes
 
                     //aggSyncInterval: 31,
-                    aggSyncInterval: Config.get('aggInterval') + 1,
+                    //aggSyncInterval: Config.get('aggInterval') + 1,
                     aggSyncMax: Config.get('aggSyncMax')
                 }
             },
