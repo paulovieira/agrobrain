@@ -34,6 +34,7 @@
     "pg": "^6.0.1",
     "psql-wrapper": "0.0.6",
     "rotating-file-stream": "^1.0.5",
+    "underscore": "^1.8.3",
     "wreck": "^8.0.0"
   }
 }

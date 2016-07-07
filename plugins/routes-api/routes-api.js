@@ -1,4 +1,5 @@
 var Path = require('path');
+var _ = require('underscore');
 var Joi = require('joi');
 var Boom = require('boom');
 var Pg = require('pg');
@@ -67,7 +68,7 @@ internals.execAggregate = function(){
 internals.execAggregateSync = function(){
 
     internals.server.log(['agg-sync'], Date.now());
-    return;
+    //return;
 
     Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
 
@@ -77,7 +78,7 @@ internals.execAggregateSync = function(){
         }
 
         console.log(internals.aggSyncQuery);
-
+    
         pgClient.query(internals.aggSyncQuery, function(err, result) {
 
             done();
@@ -102,7 +103,7 @@ internals.execAggregateSync = function(){
                 Wreck.put(internals.syncUri, internals.syncOptions, function(err, response, serverPayload){
 
                     if (err) {
-                        throw err;
+                        internals.server.log(['error', 'wreck'], {message: err.message});
                     }
 
                     internals.server.log(['agg-sync'], 'ok');
@@ -114,6 +115,21 @@ internals.execAggregateSync = function(){
             }
         });
     });
+
+
+    // auxiliary query - to be deleted later
+    // we should have a new entry in the table every 30min (aggInterval)
+    Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
+
+        if (err) { throw err; }
+
+ 
+        pgClient.query('insert into temp_notify values(now())', function(err, result) {
+
+            done();
+        });
+    });
+
 }
 
 exports.register = function(server, options, next){
@@ -318,7 +334,7 @@ curl -v -L -G -d 'mac=999-888-555&data[0][sid]=1234&data[0][value]=20.1&data[0][
 
             // TODO: is the callback executed only once, even if the trigger function is
             // executed twice?
-            pgClient.on('notification', internals.execAggregateSync);
+            pgClient.on('notification', _.debounce(internals.execAggregateSync, 5000));
         });
     });
 
