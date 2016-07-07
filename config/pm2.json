@@ -3,7 +3,7 @@
   "script": "index.js",
   "args": [
     "--production",
-    "--good=false",
+    "--good=true",
     "--blipp=false"
   ],
   "env": {
