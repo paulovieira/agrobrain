@@ -13,16 +13,18 @@ request - Request logging information. This maps to the hapi 'request' event tha
 
 module.exports = {
     ops: {
-        interval: 60*1000
+        interval: 120*1000
     },
-    reporters: {}
 };
+
+var internals = {}
+internals.reporters = {}
 
 // add good reporters, unless they are explicitely turned off
 
 if(Config.get('good-console')!=="false"){
 
-    module.exports.reporters['console'] = [
+    internals.reporters['console'] = [
         {
             module: 'good-squeeze',
             name: 'Squeeze',
@@ -35,13 +37,13 @@ if(Config.get('good-console')!=="false"){
     ];
 }
 
-if(Config.get('good-file-ops')!=="false"){
+if(Config.get('good-file')!=="false"){
 
-    module.exports.reporters['file-ops'] = [
+    internals.reporters['filex'] = [
         {
             module: 'good-squeeze',
             name: 'Squeeze',
-            args: [{ ops: '*' }]
+            args: [{ log: '*', response: '*', error: '*', request: '*' }]
         }, 
         {
             module: 'good-squeeze',
@@ -51,7 +53,32 @@ if(Config.get('good-file-ops')!=="false"){
         {
             module: 'rotating-file-stream',
             // rotates the file when its size exceeds x KiloBytes (xK) or y MegaBytes (yM)
-            args: [ 'ops_log', { size: '1M', path: Path.join(Config.get('rootDir'), 'logs') } ]  
+            //args: [ 'xxx', { size: '1M', path: Path.join(Config.get('rootDir'), 'logs') } ]  
+            args: [ 'general', { size: '1M',  path: Path.join(Config.get('rootDir'), 'logs') } ]  
         }
     ];
 }
+
+// if(Config.get('good-file-ops')!=="false"){
+
+//     internals.reporters['file-ops'] = [
+//         {
+//             module: 'good-squeeze',
+//             name: 'Squeeze',
+//             args: [{ ops: '*' }]
+//         }, 
+//         {
+//             module: 'good-squeeze',
+//             name: 'SafeJson',
+//             args: [ null, { separator: ',' } ]
+//         }, 
+//         {
+//             module: 'rotating-file-stream',
+//             // rotates the file when its size exceeds x KiloBytes (xK) or y MegaBytes (yM)
+//             args: [ 'yyy', { size: '1M', path: Path.join(Config.get('rootDir'), 'logs/ttt') } ]  
+//             //args: [ 'yyy', { size: '1M',  } ]  
+//         }
+//     ];
+// }
+
+module.exports.reporters = internals.reporters;
