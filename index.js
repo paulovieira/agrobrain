@@ -1,8 +1,8 @@
 require('./config/load');
 
 var Config = require('nconf');
-var Hoek = require('hoek');
 var Glue = require('glue');
+var Hoek = require('hoek');
 var Chalk = require('chalk');
 var Pg = require('pg');
 //var Db = require('./database');
@@ -67,21 +67,22 @@ var manifest = {
 
         {
             plugin: {
-                register: "./plugins/routes-api/routes-api.js",
-                options: { 
-                    aggInterval: Config.get('aggInterval'),  // in minutes
-                    //aggInterval: 300  // in minutes
-
-                    //aggSyncInterval: 31,
-                    //aggSyncInterval: Config.get('aggInterval') + 1,
-                    aggSyncMax: Config.get('aggSyncMax')
-                }
+                register: "./plugins/api-measurements/api-measurements.js",
+                options: require("./config/plugins/api-measurements")
             },
             options: {
                 routes: {  
                     prefix: '/api/v1'
                 }
             }
+        },
+
+        {
+            plugin: {
+                register: "./plugins/pg-pubsub/pg-pubsub.js",
+                options: require("./config/plugins/pg-pubsub")
+            },
+            options: {}
         },
 
     ]
@@ -114,15 +115,15 @@ if(Config.get('blipp')==='false'){
     );
 }
 
-// TODO: remove good console if not in production
+
 var glueOptions = {
     relativeTo: __dirname,
     preRegister: function(server, next){
-        console.log("called prior to registering plugins with the server")
+        console.log("[glue]: executing preRegister (called prior to registering plugins with the server)")
         next();
     },
     preConnections: function(server, next){
-        console.log("called prior to adding connections to the server")
+        console.log("[glue]: executing preConnections (called prior to adding connections to the server)")
         next();
     }
 };
@@ -147,7 +148,7 @@ Glue.compose(manifest, glueOptions, function (err, server) {
 
             if (err) { throw err; }
 
-            pgClient.query('SELECT * FROM version()', function(err, result) {
+            pgClient.query('SELECT version()', function(err, result) {
 
                 done();
                 if (err) { throw err; }

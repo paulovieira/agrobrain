@@ -1,6 +1,6 @@
 {
-  "name": "agro-brain",
-  "script": "index.js",
+  "name": "agrobrain-local-server",
+  "script": "./index.js",
   "args": [
     "--production",
     "--good=true",

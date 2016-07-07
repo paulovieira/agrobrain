@@ -6,7 +6,7 @@ var internals = {
 
 module.exports = {
    
-    applicationTitle: 'agro-brain',
+    applicationTitle: 'agrobrain-cloud-server',
 
     host: "localhost",
     port: 8001,
@@ -89,7 +89,5 @@ module.exports = {
         },
     },
 
-    aggInterval: 30,  // interval to compute aggregate data (in minutes)
-    aggSyncMax: 100  // max number of readings to send when syncing
 };
 

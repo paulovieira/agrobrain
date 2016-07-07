@@ -4,10 +4,11 @@ create table if not exists t_raw(
     type text not null,
     description text,
     val real,
+    agg bool default false,
     ts timestamptz not null default now()
 );
 
-
+/*
 create table if not exists t_raw_invalid(
     id bigserial primary key,
     mac text not null,
@@ -18,8 +19,10 @@ create table if not exists t_raw_invalid(
     ts timestamptz not null default now(),
     sync bool default false
 );
+*/
 
 /*
+
 mac is used for geolocation
 
 the combination of sid and type are enough to identify the reading (locally)

@@ -1,5 +1,11 @@
 const internals = {};
 
+internals.minValH = -1;
+internals.minValH = 2000;
+
+internals.minValH = -20;
+internals.minValH = 80;
+
 module.exports.insert = function insert(mac, data){
 
     var sql = `
@@ -56,36 +62,39 @@ BEGIN
     _ts := NOW();
 
 
-    -- 1a) aggregate temperatures (consider only values between -20 and 70)
+    -- 1a) aggregate temperatures (consider only values between -20 and 80)
 
     insert into t_agg(
-        ${ internals.selectAgg(interval, 't', -20, 70) }
+        ${ internals.selectAgg(interval, 't', internals.minValT, internals.maxValT) }
     );
 
-    -- 1b) copy invalid values to t_raw_sync
+    -- 1b) mark rows used in the aggregated data (use the same where condition as in selectAgg)
     
-    insert into t_raw_invalid(
-        ${ internals.selectInvalid('t', -20, 70) }
-    );
+    update t_raw
+    set agg = true
+    where 
+        now() - t_raw.ts < '${ interval } minutes' and
+        type = 't' and
+        (val >= ${ internals.minValT }) and val <= ${ internals.maxValT });
 
 
 
 
-    -- 2a) aggregate temperatures (consider only values between -1 and 2000)
+
+    -- 2a) aggregate humidity (consider only values between -1 and 2000)
 
     insert into t_agg(
-        ${ internals.selectAgg(interval, 'h', -1, 2000) }
+        ${ internals.selectAgg(interval, 'h', internals.minValH, internals.maxValH) }
     );
 
-    -- 2b) copy invalid values to t_raw_sync
+    -- 2b) mark rows used in the aggregated data (use the same where condition as in selectAgg)
 
-    insert into t_raw_invalid(
-        ${ internals.selectInvalid('h', -1, 2000) }
-    );
-
-
-    -- 3) clean t_raw
-    delete from t_raw;
+    update t_raw
+    set agg = true
+    where 
+        now() - t_raw.ts < '${ interval } minutes' and
+        type = 'h' and
+        (val >= ${ internals.minValH }) and val <= ${ internals.maxValH });
 
 END 
 $$
@@ -123,7 +132,7 @@ order by mac, sid, type, description
     return sql;
 };
 
-
+/*
 internals.selectInvalid = function(type, minVal, maxVal){
 
     // make sure there is no comma at the end 
@@ -147,27 +156,4 @@ order by ts
 
     return sql;
 };
-
-
-module.exports.aggregateSync = function(n){
-
-    // make sure there is no comma at the end 
-    // (as this query will be used as the input to a insert into)
-    var sql = `
-select 
-    mac, 
-    sid,
-    type,
-    description,
-    avg,
-    stddev,
-    n,
-    ts
-from t_agg
-where sync = false
-order by id
-limit ${ n };
-    `;
-
-    return sql;
-};
+*/
