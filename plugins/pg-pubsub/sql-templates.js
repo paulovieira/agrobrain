@@ -2,6 +2,7 @@ module.exports.aggregateSync = function(n){
 
     var sql = `
 select 
+    id,
     mac, 
     sid,
     type,

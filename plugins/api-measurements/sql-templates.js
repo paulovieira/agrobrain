@@ -1,16 +1,16 @@
 const internals = {};
 
 internals.minValH = -1;
-internals.minValH = 2000;
+internals.maxValH = 2000;
 
-internals.minValH = -20;
-internals.minValH = 80;
+internals.minValT = -20;
+internals.maxValT = 80;
 
 module.exports.insert = function insert(mac, data){
 
     var sql = `
 
-INSERT INTO "t_raw" (
+INSERT INTO "t_measurements" (
     mac, 
     sid,
     type,
@@ -42,7 +42,7 @@ VALUES
 
 /*
 
-compute averages and stddev from t_raw, taking into account these factors:
+compute averages and stddev from t_measurements, taking into account these factors:
 - the age of the readings (must be < interval minutes)
 - the values of the readings according to type (example: for temperatures, we exclude readings that are not between -20 and 70)
 
@@ -70,12 +70,12 @@ BEGIN
 
     -- 1b) mark rows used in the aggregated data (use the same where condition as in selectAgg)
     
-    update t_raw
+    update t_measurements
     set agg = true
     where 
-        now() - t_raw.ts < '${ interval } minutes' and
+        now() - t_measurements.ts < '${ interval } minutes' and
         type = 't' and
-        (val >= ${ internals.minValT }) and val <= ${ internals.maxValT });
+        (val >= ${ internals.minValT } and val <= ${ internals.maxValT });
 
 
 
@@ -89,12 +89,12 @@ BEGIN
 
     -- 2b) mark rows used in the aggregated data (use the same where condition as in selectAgg)
 
-    update t_raw
+    update t_measurements
     set agg = true
     where 
-        now() - t_raw.ts < '${ interval } minutes' and
+        now() - t_measurements.ts < '${ interval } minutes' and
         type = 'h' and
-        (val >= ${ internals.minValH }) and val <= ${ internals.maxValH });
+        (val >= ${ internals.minValH } and val <= ${ internals.maxValH });
 
 END 
 $$
@@ -120,9 +120,9 @@ select
     count(val)::smallint as n, 
     _ts as ts,
     false as sync
-from t_raw
+from t_measurements
 where 
-    now() - t_raw.ts < '${ interval } minutes' and
+    now() - t_measurements.ts < '${ interval } minutes' and
     type = '${ type }' and
     (val >= ${ minVal } and val <= ${ maxVal })
 group by mac, sid, type, description
@@ -132,28 +132,24 @@ order by mac, sid, type, description
     return sql;
 };
 
-/*
-internals.selectInvalid = function(type, minVal, maxVal){
+module.exports.aggregateSync = function(n){
 
-    // make sure there is no comma at the end 
-    // (as this query will be used as the input to a insert into)
     var sql = `
-select
-    nextval(pg_get_serial_sequence('t_raw_invalid', 'id')) as id,
+select 
+    id,
     mac, 
-    sid, 
-    type, 
+    sid,
+    type,
     description,
-    val,
-    ts,
-    false as sync
-from t_raw
-where 
-    type = '${ type }' and
-    (val < ${ minVal } or val > ${ maxVal })
-order by ts
+    avg,
+    stddev,
+    n,
+    ts
+from t_agg
+where sync = false
+order by id
+limit ${ n };
     `;
 
     return sql;
 };
-*/

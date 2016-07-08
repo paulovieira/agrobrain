@@ -22,13 +22,22 @@ internals.syncOptions = {
 };
 
 
-internals.execAggregateSync = function(){
+internals.execAggregateSync = function(data){
+
+    const payload = JSON.parse(data.payload);
+
+    if(payload.message!=='new_row'){
+        internals.server.log(['error', data.channel], payload)
+        return;
+    }
+
 
     Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
 
         if (err) {
             // TODO: add to logs + email
-            throw err;
+            internals.server.log(['error'], err.message)
+            return;
         }
 
         //console.log(internals.aggSyncQuery);
@@ -38,8 +47,8 @@ internals.execAggregateSync = function(){
             done();
 
             if (err) {
-                // TODO: add to logs + email
-                throw err;
+                internals.server.log(['error'], err.message)
+                return;
             }
 
             if(result.rowCount===0){
@@ -100,7 +109,7 @@ exports.register = function(server, options, next){
 
 
 
-    // attach listener to the 't_agg_insert' channel from postgres; when new rows are inserted in
+    // attach listener to the 'agg' channel from postgres; when new rows are inserted in
     // t_agg, a trigger function will will publish an event on this channel (via pg_notify);
 
     Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
@@ -109,7 +118,7 @@ exports.register = function(server, options, next){
             throw err;
         }
 
-        pgClient.query("LISTEN t_agg_insert", function(err, result) {
+        pgClient.query("LISTEN agg", function(err, result) {
 
             // important: here we shouldn't release the connection
             // TODO: will the connection be always live?

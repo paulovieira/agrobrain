@@ -4,18 +4,9 @@ const Boom = require('boom');
 const Pg = require('pg');
 const Config = require('nconf');
 const Sql = require('./sql-templates');
+const Wreck = require('wreck');
 
 const internals = {};
-
-internals.oneMinute = 60*1000;
-
-internals.measurementSchema = Joi.object({
-    sid: Joi.number().integer().required(),
-    value: Joi.number().required(),
-    // if more measurement types are added, we have to update here and in the sql template
-    type: Joi.string().valid('t', 'h').required(),  
-    desc: Joi.string()
-});
 
 exports.register = function(server, options, next){
 
@@ -26,12 +17,18 @@ exports.register = function(server, options, next){
         return next(new Error('aggInterval is required'));
     }
 
-    // this query doesn't change after the plugin has been registered
-    internals.aggQuery = Sql.aggregate(options.aggInterval);
+    if(!options.aggSyncMax){
+        return next(new Error('aggSyncMax is required'));
+    }
+
+    // these queries don't change after the plugin is registered, so we store it in the internals
+    internals.aggQuery     = Sql.aggregate(options.aggInterval);
+    internals.aggSyncQuery = Sql.aggregateSync(options.aggSyncMax);
 
     // internals.execAggregate will be executed for the first time only after 
     // the time of the interval time has passed
-    setInterval(internals.execAggregate, options.aggInterval*internals['oneMinute']);
+    //setInterval(internals.execAggregate, options.aggInterval*internals['oneMinute']);
+    console.log("xxxxxxxxxxxxxxxxxxxxx setInterval")
 
     server.route({
         path: options.pathReadings || '/readings',
@@ -131,6 +128,16 @@ curl -v -L -G -d 'mac=999-888-555&data[0][sid]=1234&data[0][value]=20.1&data[0][
     return next();
 };
 
+internals.oneMinute = 60*1000;
+
+internals.measurementSchema = Joi.object({
+    sid: Joi.number().integer().required(),
+    value: Joi.number().required(),
+    // if more measurement types are added, we have to update here and in the sql template
+    type: Joi.string().valid('t', 'h').required(),  
+    desc: Joi.string()
+});
+
 internals.execAggregate = function(){
 
     Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
@@ -143,23 +150,110 @@ internals.execAggregate = function(){
                 return reply(boom);
             }
 */
+
             // TODO: add to logs + email
-            throw err;
+            internals.server.log(['error'], err.message)
+            return;
         }
 
-        console.log(internals.aggQuery);
+        //console.log(internals.aggQuery);
 
         pgClient.query(internals.aggQuery, function(err, result) {
 
             done();
 
             if (err) {
-                throw err;
+                internals.server.log(['error'], err.message)
+                return 
             }
 
-            internals.server.log(['agg'], 'ok')
+            internals.server.log(['agg'], 'execAggregate was done')
+
+            // do sync now
+            internals.execAggregateSync();
         });
     });
+};
+
+
+internals.syncUri = Config.get('syncUri') + '?clientToken=' + Config.get('clientToken');
+
+internals.syncOptions = {
+    baseUrl: Config.get('syncBaseUrl'),
+    timeout: 30*1000,
+    //payload: ...
+
+    json: 'force',
+    headers: {
+        'content-type': 'application/json'
+    }
+};
+
+internals.execAggregateSync = function(){
+
+    Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
+
+        if (err) {
+            // TODO: add to logs + email
+            internals.server.log(['error'], err.message)
+            return;
+        }
+
+        //console.log(internals.aggSyncQuery);
+    
+        pgClient.query(internals.aggSyncQuery, function(err, result) {
+
+            done();
+
+            if (err) {
+                internals.server.log(['error'], err.message)
+                return;
+            }
+
+            if(result.rowCount===0){
+                internals.server.log(['agg-sync'], 'nothing to sync');
+                return;
+            }
+            else{
+                delete result.rows[1].id;
+                internals.syncOptions.payload = undefined;
+                internals.syncOptions.payload = JSON.stringify(result.rows);
+
+                console.log(internals.syncUri)
+                console.log(internals.syncOptions)
+
+                Wreck.put(internals.syncUri, internals.syncOptions, function(err, response, serverPayload){
+
+                    if (err) {
+                        internals.server.log(['error', 'agg-sync', 'wreck'], { message: err.message });
+                        return;
+                    }
+
+
+                    // TODO: if statusCode === 200, update the local database
+                    internals.server.log(['agg-sync'], 'sync was done');
+                    console.log(serverPayload);
+                    return;
+                });
+
+            }
+        });
+    });
+
+
+    // auxiliary query - to be deleted later
+    // we should have a new entry in the table every 30min (aggInterval)
+    Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
+
+        if (err) { throw err; }
+
+ 
+        pgClient.query('insert into temp_notify values(now())', function(err, result) {
+
+            done();
+        });
+    });
+
 };
 
 exports.register.attributes = {
