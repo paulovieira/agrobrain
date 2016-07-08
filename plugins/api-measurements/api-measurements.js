@@ -27,8 +27,8 @@ exports.register = function(server, options, next){
 
     // internals.execAggregate will be executed for the first time only after 
     // the time of the interval time has passed
-    //setInterval(internals.execAggregate, options.aggInterval*internals['oneMinute']);
-    console.log("xxxxxxxxxxxxxxxxxxxxx setInterval")
+    setInterval(internals.execAggregate, options.aggInterval*internals['oneMinute']);
+    //console.log("xxxxxxxxxxxxxxxxxxxxx setInterval")
 
     server.route({
         path: options.pathReadings || '/readings',
@@ -215,7 +215,6 @@ internals.execAggregateSync = function(){
                 return;
             }
             else{
-                delete result.rows[1].id;
                 internals.syncOptions.payload = undefined;
                 internals.syncOptions.payload = JSON.stringify(result.rows);
 
@@ -228,7 +227,6 @@ internals.execAggregateSync = function(){
                         internals.server.log(['error', 'agg-sync', 'wreck'], { message: err.message });
                         return;
                     }
-
 
                     // TODO: if statusCode === 200, update the local database
                     internals.server.log(['agg-sync'], 'sync was done');
