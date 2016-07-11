@@ -119,12 +119,14 @@ select
     stddev_pop(val)::real as stddev, 
     count(val)::smallint as n, 
     _ts as ts,
+    avg(battery)::smallint,
     false as sync
 from t_measurements
 where 
     now() - t_measurements.ts < '${ interval } minutes' and
     type = '${ type }' and
-    (val >= ${ minVal } and val <= ${ maxVal })
+    (val >= ${ minVal } and val <= ${ maxVal }) and
+    agg = false
 group by mac, sid, type, description
 order by mac, sid, type, description
     `;
@@ -144,7 +146,8 @@ select
     avg,
     stddev,
     n,
-    ts
+    ts,
+    battery
 from t_agg
 where sync = false
 order by id

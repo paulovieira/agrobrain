@@ -8,6 +8,7 @@ create table if not exists t_measurements(
     val real,
 
     ts timestamptz not null default now(),
+    battery smallint,
     agg bool default false,
     sync bool default false
 );
