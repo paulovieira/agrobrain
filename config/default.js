@@ -6,7 +6,7 @@ var internals = {
 
 module.exports = {
    
-    applicationTitle: 'agrobrain-cloud-server',
+    applicationTitle: 'agrobrain-local-server',
 
     host: "localhost",
     port: 8001,

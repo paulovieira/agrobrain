@@ -1,4 +1,4 @@
-var Config = require('nconf');
+const Config = require('nconf');
 
 if(Config.get('env')==='dev'){
 	module.exports = { 
@@ -10,8 +10,7 @@ if(Config.get('env')==='dev'){
 else{
 	module.exports = { 
 		// interval to compute aggregate data (in minutes)
-	    aggInterval: 30,  
+	    aggInterval: 30,
 	    aggSyncMax: 100
 	};
 }
-
