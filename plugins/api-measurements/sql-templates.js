@@ -156,3 +156,20 @@ limit ${ n };
 
     return sql;
 };
+
+
+module.exports.updateSyncStatus = function updateSyncStatus(table, ids){
+
+    const sql = `
+
+UPDATE "${ table }"
+SET sync = true
+WHERE id IN 
+(
+    ${ ids.map( (obj) => obj.id ).join(',') }
+);
+
+    `;
+
+    return sql.trim();
+};

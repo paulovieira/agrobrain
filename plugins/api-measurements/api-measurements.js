@@ -170,13 +170,13 @@ internals.execAggregate = function(){
             internals.server.log(['agg'], 'execAggregate was done')
 
             // do sync now
-            internals.execAggregateSync();
+            internals.execAggSync();
         });
     });
 };
 
-
-internals.syncUri = Config.get('syncUri') + '?clientToken=' + Config.get('clientToken');
+internals.syncAggUri = Config.get('syncAggUri') + '?clientToken=' + Config.get('clientToken');
+internals.syncMeasurementsUri = Config.get('syncMeasurementsUri') + '?clientToken=' + Config.get('clientToken');
 
 internals.syncOptions = {
     baseUrl: Config.get('syncBaseUrl'),
@@ -189,7 +189,7 @@ internals.syncOptions = {
     }
 };
 
-internals.execAggregateSync = function(){
+internals.execAggSync = function(){
 
     Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
 
@@ -218,19 +218,24 @@ internals.execAggregateSync = function(){
                 internals.syncOptions.payload = undefined;
                 internals.syncOptions.payload = JSON.stringify(result.rows);
 
-                console.log(internals.syncUri)
-                console.log(internals.syncOptions)
+                //console.log(internals.syncAggUri)
+                //console.log(internals.syncOptions)
 
-                Wreck.put(internals.syncUri, internals.syncOptions, function(err, response, serverPayload){
+                Wreck.put(internals.syncAggUri, internals.syncOptions, function(err, response, serverPayload){
 
                     if (err) {
                         internals.server.log(['error', 'agg-sync', 'wreck'], { message: err.message });
                         return;
                     }
 
-                    // TODO: if statusCode === 200, update the local database
-                    internals.server.log(['agg-sync'], 'sync was done');
-                    console.log(serverPayload);
+                    if(response.statusCode !== 200){
+                        
+                        internals.server.log(['error', 'agg-sync'], 'sync was not done: response from the server was not 200');
+                        return 
+                    }
+
+                    // update the sync status in the local database
+                    internals.updateSyncStatus('t_agg', serverPayload.records);
                     return;
                 });
 
@@ -241,6 +246,7 @@ internals.execAggregateSync = function(){
 
     // auxiliary query - to be deleted later
     // we should have a new entry in the table every 30min (aggInterval)
+/*
     Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
 
         if (err) { throw err; }
@@ -251,7 +257,38 @@ internals.execAggregateSync = function(){
             done();
         });
     });
+*/
 
+};
+
+internals.updateSyncStatus = function(table, ids){
+
+    Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
+
+        if (err) {
+            internals.server.log(['error'], err.message)
+            return;
+        }
+
+        const updateSyncStatus = Sql.updateSyncStatus(table, ids);
+        //console.log('updateSyncStatus', updateSyncStatus)
+        pgClient.query(updateSyncStatus, function(err, result) {
+
+            done();
+
+            if (err) {
+                internals.server.log(['error'], err.message)
+                return;
+            }
+
+            if(result.rowCount===0){
+                internals.server.log(['error', 'agg-sync'], 'sync status was not updated');
+                return;
+            }
+
+            internals.server.log(['agg-sync'], 'sync status was updated');
+        });
+    });
 };
 
 exports.register.attributes = {

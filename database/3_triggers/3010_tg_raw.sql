@@ -6,6 +6,9 @@ http://stackoverflow.com/questions/24193567/for-each-statement-trigger-example
 
 -- auxiliary table, used only to verify that the callback associated to the t_agg_insert
 -- channel is being executed in the js side
+
+
+/*
 create table if not exists temp_notify(ts timestamptz);
 
 
@@ -29,3 +32,5 @@ create trigger tg_agg_after_insert
     after insert on t_agg
     for each statement
     execute procedure fn_agg_after_insert();
+
+*/

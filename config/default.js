@@ -18,7 +18,8 @@ module.exports = {
     clientToken: '',
     
     syncBaseUrl: '',
-    syncUri: '/api/v1/sync',
+    syncAggUri: '/api/v1/sync/agg',
+    syncMeasurementsUri: '/api/v1/sync/measurements',
 
     rootDir: internals.rootDir,
 

@@ -1,3 +1,4 @@
+
 create table if not exists t_measurements(
 	id serial primary key,
 
