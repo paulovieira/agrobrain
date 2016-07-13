@@ -1,3 +1,5 @@
+'use strict';
+
 const internals = {};
 
 internals.minValH = -1;
@@ -157,10 +159,49 @@ limit ${ n };
     return sql;
 };
 
+module.exports.aggregateSync2 = function(n) {
+
+    const sql = `
+
+select 
+    id,
+    mac, 
+    sid,
+    type,
+    description,
+    val,
+    ts,
+    battery,
+    agg
+from t_measurements
+where sync = false
+order by id
+limit ${ n };
+
+    `;
+
+    return sql;
+};
 
 module.exports.updateSyncStatus = function updateSyncStatus(table, ids){
 
-    const sql = `
+    let sql = '';
+
+    if (ids.length === 0){
+
+        // make a query that won't change anything and that returns no rows
+        sql = `
+
+UPDATE "${ table }" 
+set id = -1
+where id = -1;
+
+        `;
+
+        return sql.trim();
+    }
+
+    sql = `
 
 UPDATE "${ table }"
 SET sync = true

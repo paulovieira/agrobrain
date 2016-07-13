@@ -11,15 +11,15 @@ module.exports = {
     host: "localhost",
     port: 8001,
 
-    publicUri: "",  // host
+    publicUrl: "",  // host
     publicPort: 8001,  // probably 80
     publicIp: "127.0.0.1",
 
     clientToken: '',
     
-    syncBaseUrl: '',
-    syncAggUri: '/api/v1/sync/agg',
-    syncMeasurementsUri: '/api/v1/sync/measurements',
+    syncUrlBase: '',
+    syncUrlAgg: '/api/v1/sync',
+    syncUrlMeasurements: '/api/v1/sync/measurements',
 
     rootDir: internals.rootDir,
 
