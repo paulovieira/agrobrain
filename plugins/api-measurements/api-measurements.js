@@ -126,6 +126,7 @@ exports.register = function (server, options, next){
     server.route({
         path: '/agg',
         method: 'GET',
+        config: {},
         handler: function (request, reply) {
 
             internals.execAggregate();
@@ -219,12 +220,12 @@ internals.execAggSync = function(){
                     measurements: result2.rows
                 });
 
-                //console.log('payload: ', internals.syncOptions.payload)
+                //console.log('syncOptions: ', internals.syncOptions)
 
                 Wreck.put(internals.syncUrlAgg, internals.syncOptions, function (err, response, serverPayload){
 
                     if (err) {
-                        internals.server.log(['error', 'execAggSync', 'wreck'], err.message);
+                        internals.server.log(['error', 'execAggSync', 'wreck'], { message: err.message, payload: JSON.stringify(serverPayload) });
                         return;
                     }
 

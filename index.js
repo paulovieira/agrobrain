@@ -59,7 +59,15 @@ var manifest = {
 
         {
             plugin: {
-                register: "hapi-qs",
+                register: 'nes',
+                options: require('./config/plugins/nes')
+            },
+            options: {}
+        },
+
+        {
+            plugin: {
+                register: 'hapi-qs',
                 options: {}
             },
             options: {}
@@ -67,15 +75,23 @@ var manifest = {
 
         {
             plugin: {
-                register: "./plugins/api-measurements/api-measurements.js",
-                options: require("./config/plugins/api-measurements")
+                register: './plugins/api-measurements/api-measurements.js',
+                options: require('./config/plugins/api-measurements')
             },
             options: {
-                routes: {  
+                routes: {
                     prefix: '/api/v1'
                 }
             }
         },
+
+        {
+            plugin: {
+                register: './plugins/api-commands/api-commands.js',
+                options: {}
+            },
+            options: {}
+        }
 
         // {
         //     plugin: {

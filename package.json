@@ -31,6 +31,7 @@
     "hoek": "^4.0.1",
     "joi": "^8.4.2",
     "nconf": "^0.8.4",
+    "nes": "^6.2.1",
     "pg": "^6.0.1",
     "psql-wrapper": "0.0.6",
     "rotating-file-stream": "^1.0.5",
