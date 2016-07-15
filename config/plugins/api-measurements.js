@@ -10,7 +10,7 @@ if (Config.get('env') === 'dev'){
 }
 else {
     module.exports = {
-        interval: 30,
+        interval: 15,
         syncMax: 100
     };
 }

@@ -21,6 +21,7 @@ module.exports = {
     syncUrlAgg: '/api/v1/sync',
     syncUrlMeasurements: '/api/v1/sync/measurements',
 
+
     rootDir: internals.rootDir,
 
     db: {
