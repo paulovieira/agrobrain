@@ -101,6 +101,7 @@ internals.updateGpioState = function (value){
         end: now
     };
 
+    Sql.insertGpioState(obj);
     Pg.connect(Config.get('db:postgres'), function (err, pgClient, done) {
 
         if (err) {
