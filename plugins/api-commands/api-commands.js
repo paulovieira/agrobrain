@@ -93,6 +93,7 @@ internals.client.onUpdate = function (message){
 // t_gpio_state table
 internals.updateGpioState = function (value){
 
+    console.log('updateGpioState: ', value)
     const now = new Date().toISOString();
     const obj = {
         value: value,
