@@ -10,7 +10,20 @@ module.exports.gpioReadSync = function (pin){
 
     if (Config.get('env') === 'dev'){
         internals.value++;
-        return internals.value % 2;
+        if(internals.value < 3){
+            return 0;
+        }
+        if(internals.value >= 3 && internals.value < 7){
+            return 1;
+        }
+        if(internals.value >= 7 && internals.value < 10){
+            return 0;
+        }
+        if(internals.value >= 10 && internals.value < 15){
+            return 0;
+        }
+        return 1;
+        //return internals.value % 2;
     }
 
     let command = '';

@@ -3,6 +3,8 @@
 const Path = require('path');
 const Nes = require('nes');
 const Config = require('nconf');
+const Pg = require('pg');
+var Sql = require('./sql-templates')
 const Utils = require('../../utils/util');
 
 const internals = {};
@@ -15,6 +17,7 @@ internals.endpoints = {
 internals.client = new Nes.Client(Config.get('websocketUrlBase'));
 
 internals['tenSeconds'] = 10 * 1000;
+internals['threeSeconds'] = 3 * 1000;
 
 exports.register = function (server, options, next){
 
@@ -48,7 +51,9 @@ exports.register = function (server, options, next){
         );
     });
 
-    setInterval(internals.readGpio, internals['tenSeconds']);
+    const interval = Config.get('env') === 'production' ? internals['tenSeconds'] :
+                                                        internals['threeSeconds'];
+    setInterval(internals.readGpio, interval);
 
     return next();
 };
@@ -83,9 +88,42 @@ internals.client.onUpdate = function (message){
 };
 
 
+
+// TODO: execute a pg function every 10 minutes which will compact the 
+// t_gpio_state table
+internals.updateGpioState = function (value){
+
+    const now = new Date().toISOString();
+    const obj = {
+        value: value,
+        start: now,
+        end: now
+    };
+
+    Pg.connect(Config.get('db:postgres'), function (err, pgClient, done) {
+
+        if (err) {
+            internals.server.log(['error', 'updateGpioState'], err.message);
+            return;
+        }
+
+        pgClient.query(Sql.insertGpioState(obj), function (err, result) {
+
+            done();
+
+            if (err) {
+                internals.server.log(['error', 'updateGpioState'], err.message);
+            }
+        });
+    });
+
+};
+
 internals.readGpio = function (){
 
     const value = Utils.gpioReadSync(Config.get('gpioPin'));
+    internals.updateGpioState(value);
+
     const options = {
         path: internals.endpoints.setState,
         method: 'PUT',
