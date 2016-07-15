@@ -13,7 +13,7 @@ INSERT INTO "t_gpio_state" (
 )
 VALUES
 (
-    '${ !!obj.value }', 
+    '${ !!Number(obj.value) }', 
     '${ obj.start }',
     '${ obj.end }'
 )
