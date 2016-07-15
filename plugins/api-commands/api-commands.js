@@ -93,7 +93,6 @@ internals.client.onUpdate = function (message){
 // t_gpio_state table
 internals.updateGpioState = function (value){
 
-    console.log('updateGpioState: ', value)
     const now = new Date().toISOString();
     const obj = {
         value: value,
@@ -101,7 +100,6 @@ internals.updateGpioState = function (value){
         end: now
     };
 
-    console.log(Sql.insertGpioState(obj))
     Pg.connect(Config.get('db:postgres'), function (err, pgClient, done) {
 
         if (err) {
