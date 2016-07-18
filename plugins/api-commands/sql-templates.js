@@ -4,6 +4,10 @@ const internals = {};
 
 module.exports.insertGpioState = function insertGpioState(obj){
 
+    console.log("value: ", obj.value);
+    console.log("start: ", obj.start);
+
+
     let sql = `
 
 INSERT INTO "t_gpio_state" (
@@ -13,7 +17,7 @@ INSERT INTO "t_gpio_state" (
 )
 VALUES
 (
-    '${ !!Number(obj.value) }', 
+    '${ obj.value }', 
     '${ obj.start }',
     '${ obj.end }'
 )

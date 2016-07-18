@@ -95,7 +95,7 @@ internals.updateGpioState = function (value){
 
     const now = new Date().toISOString();
     const obj = {
-        value: value,
+        value: !!Number(value),
         start: now,
         end: now
     };
