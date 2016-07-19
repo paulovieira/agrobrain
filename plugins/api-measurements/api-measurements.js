@@ -35,7 +35,9 @@ exports.register = function (server, options, next){
     // these queries don't change after the plugin is registered, so we store it in the internals
     internals.aggQuery     = Sql.aggregate(options.interval);
     internals.aggSyncQuery = Sql.aggregateSync(options.syncMax);
-    internals.aggSyncQuery2 = Sql.aggregateSync2(options.syncMax);
+    internals.measurementsSyncQuery = Sql.measurementsSync(options.syncMax);
+    internals.logStateSyncQuery     = Sql.logStateSync(options.syncMax);
+    
 
     // aggregate data every N min (N = options.interval);
     // timer functions are executed for the first time only after 
@@ -200,50 +202,82 @@ internals.execAggSync = function(){
             }
 
             // immediatelly reuse the same client for a second query
-            pgClient.query(internals.aggSyncQuery2, function (err2, result2) {
-
-                done();
+            pgClient.query(internals.measurementsSyncQuery, function (err2, result2) {
 
                 if (err2) {
                     internals.server.log(['error', 'execAggSync'], err2.message);
                     return;
                 }
 
-                if (result.rowCount === 0 && result2.rowCount === 0){
-                    internals.server.log(['execAggSync'], 'nothing to sync');
-                    return;
-                }
+                // immediatelly reuse the same client for a third query
 
-                internals.syncOptions.payload = undefined;
-                internals.syncOptions.payload = JSON.stringify({
-                    agg: result.rows,
-                    measurements: result2.rows
-                });
+                //console.log('xyz: ', internals.logStateSyncQuery)
+                pgClient.query(internals.logStateSyncQuery, function (err3, result3) {
 
-                //console.log('syncOptions: ', internals.syncOptions)
 
-                Wreck.put(internals.syncUrlAgg, internals.syncOptions, function (err, response, serverPayload){
+                    done();
 
-                    if (err) {
-                        internals.server.log(['error', 'execAggSync', 'wreck'], { message: err.message, payload: JSON.stringify(serverPayload) });
+                    if (err3) {
+                        internals.server.log(['error', 'execAggSync'], err3.message);
                         return;
                     }
 
-                    if (response.statusCode !== 200){
-                        
-                        internals.server.log(['error', 'execAggSync'], 'sync was not done: response from the server was not 200. server payload: ' + JSON.stringify(serverPayload));
-                        return 
+                    if (result.rowCount === 0 && result2.rowCount === 0 && result3.rowCount === 0){
+                        internals.server.log(['execAggSync'], 'nothing to sync');
+                        return;
                     }
 
-                    // update the sync status in the local database
+                    // change date format
+                    result.rows.forEach( (obj) => { 
+                        obj.ts = obj.ts.toISOString();
+                    });
 
-                    console.log("serverPayload: ", JSON.stringify(serverPayload))
-                    internals.updateSyncStatus('t_agg', serverPayload.agg);
-                    internals.updateSyncStatus('t_measurements', serverPayload.measurements);
+                    result2.rows.forEach( (obj) => { 
+                        obj.ts = obj.ts.toISOString();
+                    });
 
-                    return;
-                });
-                
+                    result3.rows.forEach( (obj) => { 
+                        obj.ts_start = obj.ts_start.toISOString();
+                        obj.ts_end   = obj.ts_end.toISOString();
+                    });
+
+                    console.log("rows", result.rows)
+                    // console.log("rows2", result2.rows)
+                    //console.log("rows3", result3.rows)
+
+                    internals.syncOptions.payload = undefined;
+                    internals.syncOptions.payload = JSON.stringify({
+                        agg: result.rows,
+                        measurements: result2.rows,
+                        logState: result3.rows
+                    });
+
+                    //console.log('syncOptions: ', internals.syncOptions);
+                    //console.log('syncOptions.payload: ', internals.syncOptions.payload);
+
+                    Wreck.put(internals.syncUrlAgg, internals.syncOptions, function (err, response, serverPayload){
+
+                        if (err) {
+                            internals.server.log(['error', 'execAggSync', 'wreck'], { message: err.message, payload: JSON.stringify(serverPayload) });
+                            return;
+                        }
+
+                        if (response.statusCode !== 200){
+                            
+                            internals.server.log(['error', 'execAggSync'], 'sync was not done: response from the server was not 200. server payload: ' + JSON.stringify(serverPayload));
+                            return 
+                        }
+
+                        // update the sync status in the local database
+
+                        console.log("serverPayload: ", JSON.stringify(serverPayload))
+                        internals.updateSyncStatus('t_agg', serverPayload.agg);
+                        internals.updateSyncStatus('t_measurements', serverPayload.measurements);
+                        internals.updateSyncStatus('t_log_state', serverPayload.logState);
+
+                        return;
+                    });
+                })
             });
         });
     });

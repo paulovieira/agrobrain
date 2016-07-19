@@ -50,6 +50,7 @@ BEGIN
 	end if;
 	
 	-- case 3) gpio value is diferent than the last one; insert new row
+	-- note: it seems we need the outer parentheses for the comparison to work in pg 9.4
 	if ((_last_row.event)->>'type') != (_event->>'type') then
 		insert into t_log_state(event) values(_event);
 		return;

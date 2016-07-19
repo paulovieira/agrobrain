@@ -159,7 +159,7 @@ limit ${ n };
     return sql;
 };
 
-module.exports.aggregateSync2 = function(n) {
+module.exports.measurementsSync = function(n) {
 
     const sql = `
 
@@ -174,6 +174,25 @@ select
     battery,
     agg
 from t_measurements
+where sync = false
+order by id
+limit ${ n };
+
+    `;
+
+    return sql;
+};
+
+module.exports.logStateSync = function(n) {
+
+    const sql = `
+
+select 
+    id,
+    event, 
+    ts_start,
+    ts_end
+from t_log_state
 where sync = false
 order by id
 limit ${ n };
