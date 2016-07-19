@@ -50,7 +50,7 @@ BEGIN
 	end if;
 	
 	-- case 3) gpio value is diferent than the last one; insert new row
-	if((_last_row.event)->'type' != _event->'type') then
+	if ((_last_row.event)->>'type') != (_event->>'type') then
 		insert into t_log_state(event) values(_event);
 		return;
 	end if;
