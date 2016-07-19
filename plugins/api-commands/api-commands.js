@@ -19,6 +19,8 @@ internals.client = new Nes.Client(Config.get('websocketUrlBase'));
 internals['tenSeconds'] = 10 * 1000;
 internals['threeSeconds'] = 3 * 1000;
 
+internals.interval = (Config.get('env') === 'production') ? internals['tenSeconds'] : internals['threeSeconds'];
+
 exports.register = function (server, options, next){
 
     internals.server = server;
@@ -51,9 +53,7 @@ exports.register = function (server, options, next){
         );
     });
 
-    const interval = Config.get('env') === 'production' ? internals['tenSeconds'] :
-                                                        internals['threeSeconds'];
-    setInterval(internals.readGpio, interval);
+    setInterval(internals.readGpio, internals.interval);
 
     return next();
 };
@@ -89,30 +89,27 @@ internals.client.onUpdate = function (message){
 
 
 
-// TODO: execute a pg function every 10 minutes which will compact the 
-// t_gpio_state table
-internals.updateGpioState = function (value){
+// TODO: execute a pg function every n minutes which will insert/update
+// the current state of the gpio
+internals.updateLogState = function (value){
 
     const now = new Date().toISOString();
-    const obj = {
-        value: !!Number(value),
-        start: now,
-        end: now
-    };
 
     Pg.connect(Config.get('db:postgres'), function (err, pgClient, done) {
 
         if (err) {
-            internals.server.log(['error', 'updateGpioState'], err.message);
+            internals.server.log(['error', 'updateLogState'], err.message);
             return;
         }
 
-        pgClient.query(Sql.insertGpioState(obj), function (err, result) {
+        const query = `select * from update_log_state('{ "gpioState": ${ !!Number(value) }, "userId": null, "interval": ${ internals.interval } }')`;
+        console.log('query: ', query);
+        pgClient.query(query, function (err, result) {
 
             done();
 
             if (err) {
-                internals.server.log(['error', 'updateGpioState'], err.message);
+                internals.server.log(['error', 'updateLogState'], err.message);
             }
         });
     });
@@ -122,7 +119,7 @@ internals.updateGpioState = function (value){
 internals.readGpio = function (){
 
     const value = Utils.gpioReadSync(Config.get('gpioPin'));
-    internals.updateGpioState(value);
+    internals.updateLogState(value);
 
     const options = {
         path: internals.endpoints.setState,

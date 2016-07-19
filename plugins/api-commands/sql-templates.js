@@ -2,6 +2,7 @@
 
 const internals = {};
 
+/*
 module.exports.insertGpioState = function insertGpioState(obj){
 
     console.log("value: ", obj.value);
@@ -28,7 +29,7 @@ VALUES
     // remove the comma in the tail (we know l > 0)
     return sql.trim();
 };
-
+*/
 
 /*
 

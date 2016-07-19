@@ -249,21 +249,6 @@ internals.execAggSync = function(){
     });
 
 
-    // auxiliary query - to be deleted later
-    // we should have a new entry in the table every 30min (interval)
-/*
-    Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
-
-        if (err) { throw err; }
-
- 
-        pgClient.query('insert into temp_notify values(now())', function(err, result) {
-
-            done();
-        });
-    });
-*/
-
 };
 
 internals.updateSyncStatus = function (table, ids){

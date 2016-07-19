@@ -93,14 +93,6 @@ var manifest = {
             options: {}
         }
 
-        // {
-        //     plugin: {
-        //         register: "./plugins/pg-pubsub/pg-pubsub.js",
-        //         options: require("./config/plugins/pg-pubsub")
-        //     },
-        //     options: {}
-        // },
-
     ]
 };
 
