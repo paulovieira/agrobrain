@@ -1,5 +1,5 @@
 
-create table if not exists t_state( 
+create table if not exists t_log_state( 
     id serial primary key,
 
     event jsonb,
@@ -12,10 +12,10 @@ create table if not exists t_state(
 /*
 the event column has data of the form
 
-{"event": "reboot"}
-{"event": "gpio_on", "user_id": 1}
-{"event": "gpio_off", "user_id": 1}
-{"event": "reboot"}
+{"type": "reboot"}
+{"type": "gpio_high", "user_id": 1}
+{"type": "gpio_low", "user_id": 1}
+{"type": "reboot"}
 ...
 
 */
