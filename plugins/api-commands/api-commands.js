@@ -4,7 +4,9 @@ const Path = require('path');
 const Nes = require('nes');
 const Config = require('nconf');
 const Pg = require('pg');
-var Sql = require('./sql-templates')
+const Boom = require('boom');
+const Db = require('../../database');
+const Sql = require('./sql-templates');
 const Utils = require('../../utils/util');
 
 const internals = {};
@@ -91,9 +93,8 @@ internals.client.onUpdate = function (message){
 
 // TODO: execute a pg function every n minutes which will insert/update
 // the current state of the gpio
-internals.updateLogState = function (value){
-
-    const now = new Date().toISOString();
+/*
+internals.updateLogStateOld = function (value){
 
     Pg.connect(Config.get('db:postgres'), function (err, pgClient, done) {
 
@@ -114,6 +115,22 @@ internals.updateLogState = function (value){
         });
     });
 
+};
+*/
+internals.updateLogState = function updateLogState(value){
+
+    const input = {
+        gpioState: !!Number(value),
+        userId: null,
+        //interval: internals.interval / 1000  // the interval in postgres is defined in seconds
+        interval: 'abc'
+    };
+
+    Db.func('update_log_state', JSON.stringify(input))
+        .catch(function (err){
+
+            Utils.logErr(err, ['updateLogState']);
+        });
 };
 
 internals.readGpio = function (){

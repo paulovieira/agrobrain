@@ -1,15 +1,19 @@
+'use strict';
+
 require('./config/load');
 
-var Config = require('nconf');
-var Glue = require('glue');
-var Hoek = require('hoek');
-var Chalk = require('chalk');
-var Pg = require('pg');
+const Config = require('nconf');
+const Glue = require('glue');
+const Hoek = require('hoek');
+const Chalk = require('chalk');
+//const Pg = require('pg');
+const Db = require('./database');
+const Utils = require('./utils/util');
 //var Db = require('./database');
 
 process.title = Config.get('applicationTitle');
 
-var manifest = {
+const manifest = {
 
     server: {
 
@@ -97,26 +101,26 @@ var manifest = {
 };
 
 
-// load plugins, unless they are explicitely turned off 
+// load the remaining plugins, unless they are explicitely turned off in a command line option
 
 if(Config.get('good')!=='false'){
     manifest.registrations.push(
         {
             plugin: {
-                register: "good",
-                options: require("./config/plugins/good")
+                register: 'good',
+                options: require('./config/plugins/good')
             },
             options: {}
         }
     );
 }
 
-if(Config.get('blipp')==='false'){
+if(Config.get('blipp')!=='false'){
     manifest.registrations.push(
         {
             plugin: {
-                register: "blipp",
-                options: require("./config/plugins/blipp")
+                register: 'blipp',
+                options: require('./config/plugins/blipp')
             },
             options: {}
         }
@@ -124,14 +128,16 @@ if(Config.get('blipp')==='false'){
 }
 
 
-var glueOptions = {
+const glueOptions = {
     relativeTo: __dirname,
-    preRegister: function(server, next){
-        console.log("[glue]: executing preRegister (called prior to registering plugins with the server)")
+    preRegister: function (server, next){
+
+        console.log('[glue]: executing preRegister (called prior to registering plugins with the server)');
         next();
     },
-    preConnections: function(server, next){
-        console.log("[glue]: executing preConnections (called prior to adding connections to the server)")
+    preConnections: function (server, next){
+
+        console.log('[glue]: executing preConnections (called prior to adding connections to the server)');
         next();
     }
 };
@@ -141,31 +147,24 @@ Glue.compose(manifest, glueOptions, function (err, server) {
     Hoek.assert(!err, 'Failed registration of one or more plugins: ' + err);
 
     // start the server and finish the initialization process
-    server.start(function(err) {
+    server.start( function(err){
 
         Hoek.assert(!err, 'Failed server start: ' + err);
+
+        Utils.setServer(server);
         
         // show some informations about the server
         console.log(Chalk.green('================='));
-        console.log("Hapi version: " + server.version);
+        console.log('Hapi version: ' + server.version);
         console.log('host: ' + server.info.host);
         console.log('port: ' + server.info.port);
-        console.log("process.env.NODE_ENV: ", process.env.NODE_ENV);
+        console.log('process.env.NODE_ENV: ', process.env.NODE_ENV);
 
-        Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
-
-            if (err) { throw err; }
-
-            pgClient.query('SELECT version()', function(err, result) {
-
-                done();
-                if (err) { throw err; }
-
-                console.log("database: ", result.rows[0].version);
+        Db.query('SELECT version()')
+            .then(function(result){
+                console.log('database: ', result[0].version);
                 console.log(Chalk.green('================='));
             });
-        });
-        
     });
 });
 
