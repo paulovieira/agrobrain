@@ -61,6 +61,7 @@ console.log('Command line configuration (overrides default and environment):', a
 if (env==='production'){
     console.log('');
     console.log('To see the console reporter, use the option "--reporter-console" ');
+    console.log('To see the postgres queries, use the option "--pg-monitor" ');
 }
 
 console.log(Chalk.green('=================\n'));

@@ -15,7 +15,8 @@ internals.pgpConfig = {
 internals.pgp = PgPromise(internals.pgpConfig);
 
 // activate postgres monitor; we must use the same configuration object that was used to initialize pg-promise;
-if (Config.get('env') === 'dev'){
+
+if ( String(Config.get('pg-monitor')) === 'true'){
     PgMonitor.attach(internals.pgpConfig);
 }
 
