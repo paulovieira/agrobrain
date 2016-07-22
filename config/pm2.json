@@ -2,7 +2,8 @@
   "name": "agrobrain-local-server",
   "script": "./index.js",
   "args": [
-    "--production"
+    "--production",
+    "--reporter-console"
   ],
   "env": {
   },
