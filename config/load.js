@@ -57,4 +57,10 @@ for(var i=2; i<process.argv.length; i++){
 }
 
 console.log('Command line configuration (overrides default and environment):', argv);
+
+if (env==='production'){
+    console.log('');
+    console.log('To see the console reporter, use the option "--reporter-console" ');
+}
+
 console.log(Chalk.green('=================\n'));

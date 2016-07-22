@@ -8,7 +8,11 @@ internals.maxValH = 2000;
 internals.minValT = -20;
 internals.maxValT = 80;
 
-module.exports.insert = function insert(mac, data){
+module.exports.insert = function insert(qsObj){
+
+    const mac = qsObj.mac;
+    const battery = qsObj.battery;
+    const data = qsObj.data;
 
     var sql = `
 
@@ -17,7 +21,8 @@ INSERT INTO "t_measurements" (
     sid,
     type,
     description,
-    val
+    val,
+    battery
 )
 VALUES
 
@@ -31,11 +36,12 @@ VALUES
      ${ data[i]['sid']        } ,
     '${ data[i]['type']       }',
     '${ data[i]['desc'] || '' }',
-     ${ data[i]['value']      }
+     ${ data[i]['value']      },
+     ${ battery || null       }
 ),
         `;
     }
-    
+    console.log(sql)
     // remove the comma in the tail (we know l > 0)
     return sql.trim().slice(0, -1);
 };

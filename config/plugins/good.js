@@ -2,6 +2,8 @@
 
 const Path = require('path');
 const Config = require('nconf');
+const GoodConsole = require('good-console');
+const GoodSqueeze = require('good-squeeze');
 
 const internals = {};
 
@@ -22,7 +24,7 @@ request - Request logging information. This maps to the hapi 'request' event tha
 module.exports = {
     ops: {
         interval: 120 * 1000
-        //interval: 3 * 1000
+        //interval: 1 * 1000
     }
 };
 
@@ -34,140 +36,94 @@ internals.reporters = {};
 
 if (Config.get('env') === 'dev'){
 
+    // general log to the console
     internals.reporters['console'] = [
+        new GoodSqueeze.Squeeze({ log: '*', response: '*', request: '*', error: '*' }),
+        new GoodConsole(),
+        process.stdout
+    ];
+
+    // general log file (pretty much all goes here!)
+    internals.reporters['general-file'] = [
+        new GoodSqueeze.Squeeze({ log: '*', response: '*', request: '*' }),
+        new GoodSqueeze.SafeJson(),
         {
-            module: 'good-squeeze',
-            name: 'Squeeze',
-            args: [{ log: '*', response: '*', error: '*', request: '*' }]
-        },
-        {
-            module: 'good-console'
-        },
-        'stdout'
+            module: 'rotating-file-stream',
+            args: ['general.log', { size: internals.maxSize, path: internals.logDir }]  
+        }
     ];
 
     // filter for errors (both internal and from the application)
-    internals.reporters['errors'] = [
-        {
-            module: 'good-squeeze',
-            name: 'Squeeze',
-            args: [{ log: 'error', error: '*' }]
-        },
-        {
-            module: 'good-squeeze',
-            name: 'SafeJson',
-            args: [null]
-        },
+    // some events already logged in the 'general' file are repeated here
+    internals.reporters['errors-file'] = [
+        new GoodSqueeze.Squeeze({ log: 'error', error: '*' }),
+        new GoodSqueeze.SafeJson(),
         {
             module: 'rotating-file-stream',
-            args: ['errors', { size: internals.maxSize, path: internals.logDir }]
+            args: ['errors.log', { size: internals.maxSize, path: internals.logDir }]
         }
     ];
 
-    // some events in the 'general' file are repeated in the 'error' (the application errors)
-    internals.reporters['general'] = [
-        {
-            module: 'good-squeeze',
-            name: 'Squeeze',
-            args: [{ log: '*', response: '*', request: '*' }]
-        }, 
-        {
-            module: 'good-squeeze',
-            name: 'SafeJson',
-            args: [null]
-        }, 
+    // log machine load 
+    internals.reporters['ops-file'] = [
+        new GoodSqueeze.Squeeze({ ops: '*' }),
+        new GoodSqueeze.SafeJson(),
         {
             module: 'rotating-file-stream',
-            args: ['general', { size: internals.maxSize, path: internals.logDir }]  
+            args: [ 'ops.log', { size: internals.maxSize, path: internals.logDir } ]  
         }
     ];
 
-    internals.reporters['ops'] = [
-        {
-            module: 'good-squeeze',
-            name: 'Squeeze',
-            args: [{ ops: '*' }]
-        }, 
-        {
-            module: 'good-squeeze',
-            name: 'SafeJson',
-            args: [null]
-        }, 
-        {
-            module: 'rotating-file-stream',
-            args: [ 'ops', { size: internals.maxSize, path: internals.logDir } ]  
-        }
-    ];
 }
 
+// equal to the dev environment, except for the console reporter; however
+// it can be added explicitely with the 'reporter-console' command line option
 else if (Config.get('env') === 'production'){
 
-    internals.reporters['console'] = [
+    // general log file (pretty much all goes here!)
+    internals.reporters['general-file'] = [
+        new GoodSqueeze.Squeeze({ log: '*', response: '*', request: '*' }),
+        new GoodSqueeze.SafeJson(),
         {
-            module: 'good-squeeze',
-            name: 'Squeeze',
-            args: [{ log: '*', response: '*', error: '*', request: '*' }]
-        },
-        {
-            module: 'good-console'
-        },
-        'stdout'
+            module: 'rotating-file-stream',
+            args: ['general.log', { size: internals.maxSize, path: internals.logDir }]  
+        }
     ];
-
 
     // filter for errors (both internal and from the application)
-    internals.reporters['errors'] = [
-        {
-            module: 'good-squeeze',
-            name: 'Squeeze',
-            args: [{ log: 'error', error: '*' }]
-        },
-        {
-            module: 'good-squeeze',
-            name: 'SafeJson',
-            args: [null]
-        },
+    // some events already logged in the 'general' file are repeated here
+    internals.reporters['errors-file'] = [
+        new GoodSqueeze.Squeeze({ log: 'error', error: '*' }),
+        new GoodSqueeze.SafeJson(),
         {
             module: 'rotating-file-stream',
-            args: ['errors', { size: internals.maxSize, path: internals.logDir }]
+            args: ['errors.log', { size: internals.maxSize, path: internals.logDir }]
         }
     ];
 
-    // some events in the 'general' file are repeated in the 'error' (the application errors)
-    internals.reporters['general'] = [
-        {
-            module: 'good-squeeze',
-            name: 'Squeeze',
-            args: [{ log: '*', response: '*', request: '*' }]
-        }, 
-        {
-            module: 'good-squeeze',
-            name: 'SafeJson',
-            args: [null]
-        }, 
+    // log machine load 
+    internals.reporters['ops-file'] = [
+        new GoodSqueeze.Squeeze({ ops: '*' }),
+        new GoodSqueeze.SafeJson(),
         {
             module: 'rotating-file-stream',
-            args: ['general', { size: internals.maxSize, path: internals.logDir }]  
+            args: [ 'ops.log', { size: internals.maxSize, path: internals.logDir } ]  
         }
     ];
 
-    internals.reporters['ops'] = [
-        {
-            module: 'good-squeeze',
-            name: 'Squeeze',
-            args: [{ ops: '*' }]
-        }, 
-        {
-            module: 'good-squeeze',
-            name: 'SafeJson',
-            args: [null]
-        }, 
-        {
-            module: 'rotating-file-stream',
-            args: [ 'ops', { size: internals.maxSize, path: internals.logDir } ]  
-        }
-    ];
+
+    if ( String(Config.get('reporter-console')) === 'true'){
+        // general log to the console
+        internals.reporters['console'] = [
+            new GoodSqueeze.Squeeze({ log: '*', response: '*', request: '*', error: '*' }),
+            new GoodConsole(),
+            process.stdout
+        ];
+    }
+
 }
+
+
 
 
 module.exports.reporters = internals.reporters;

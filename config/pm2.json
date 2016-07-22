@@ -2,9 +2,7 @@
   "name": "agrobrain-local-server",
   "script": "./index.js",
   "args": [
-    "--production",
-    "--good=true",
-    "--blipp=true"
+    "--production"
   ],
   "env": {
   },

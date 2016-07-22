@@ -24,25 +24,30 @@ exports.register = function (server, options, next){
 
     internals.server = server;
 
-    if (!options.interval){
-        return next(new Error('interval is required'));
+    if (!options.aggInterval){
+        return next(new Error('aggInterval is required'));
     }
-
+    if (!options.syncInterval){
+        return next(new Error('syncInterval is required'));
+    }
     if (!options.syncMax){
         return next(new Error('syncMax is required'));
     }
 
     // these queries don't change after the plugin is registered, so we store it in the internals
-    internals.aggQuery     = Sql.aggregate(options.interval);
+    internals.aggQuery     = Sql.aggregate(options.aggInterval);
     internals.aggSyncQuery = Sql.aggregateSync(options.syncMax);
     internals.measurementsSyncQuery = Sql.measurementsSync(options.syncMax);
     internals.logStateSyncQuery     = Sql.logStateSync(options.syncMax);
     
 
-    // aggregate data every N min (N = options.interval);
+    // aggregate data every N min (N = options.aggInterval);
     // timer functions are executed for the first time only after 
-    // the time of the interval time has passed
-    setInterval(internals.execAggregate, options.interval * internals['oneMinute']);
+    // the time length of the aggInterval has passed
+    setInterval(internals.execAggregate, options.aggInterval * internals['oneMinute']);
+
+    // sync data every 3 minutes
+    setInterval(internals.execAggSync,   options.syncInterval * internals['oneMinute']);
 
     server.route({
         path: options.pathReadings || '/readings',
@@ -53,6 +58,7 @@ exports.register = function (server, options, next){
 
                 query: {
                     mac: Joi.string().required(),
+                    battery: Joi.number(),
                     data: Joi.array().items(internals.measurementSchema).min(1).required()
                 },
 
@@ -92,7 +98,7 @@ exports.register = function (server, options, next){
             // if(Config.get('env')==='production'){
             //     console.log(request.query);
             // }
-
+            console.log(request.query)
             Pg.connect(Config.get('db:postgres'), function (err, pgClient, done) {
 
                 let boom;
@@ -102,7 +108,7 @@ exports.register = function (server, options, next){
                     return reply(boom);
                 }
 
-                pgClient.query(Sql.insert(request.query.mac, request.query.data), function(err, result) {
+                pgClient.query(Sql.insert(request.query), function(err, result) {
 
                     done();
 
@@ -136,6 +142,17 @@ exports.register = function (server, options, next){
         }
     });
 
+    server.route({
+        path: '/sync',
+        method: 'GET',
+        config: {},
+        handler: function (request, reply) {
+
+            internals.execAggSync();
+            return reply(`[${ new Date().toISOString() }]: check the output in the console`);
+        }
+    });
+
     return next();
 };
 
@@ -161,9 +178,6 @@ internals.execAggregate = function(){
             }
 
             internals.server.log(['agg', 'execAggregate'], 'aggregation was done');
-
-            // do sync now
-            internals.execAggSync();
         });
     });
 };
@@ -241,7 +255,7 @@ internals.execAggSync = function(){
                         obj.ts_end   = obj.ts_end.toISOString();
                     });
 
-                    console.log("rows", result.rows)
+                    //console.log("rows", result.rows)
                     // console.log("rows2", result2.rows)
                     //console.log("rows3", result3.rows)
 

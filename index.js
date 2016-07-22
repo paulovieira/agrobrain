@@ -63,6 +63,20 @@ const manifest = {
 
         {
             plugin: {
+                register: 'blipp',
+                options: require('./config/plugins/blipp')
+            },
+            options: {}
+        },
+        {
+            plugin: {
+                register: 'good',
+                options: require('./config/plugins/good')
+            },
+            options: {}
+        }
+        {
+            plugin: {
                 register: 'nes',
                 options: require('./config/plugins/nes')
             },
@@ -103,32 +117,22 @@ const manifest = {
 
 // load the remaining plugins, unless they are explicitely turned off in a command line option
 
-if(Config.get('good')!=='false'){
-    manifest.registrations.push(
-        {
-            plugin: {
-                register: 'good',
-                options: require('./config/plugins/good')
-            },
-            options: {}
-        }
-    );
-}
+// if(Config.get('my-plugin')!=='false'){
+//     manifest.registrations.push(
+//        {
+//            plugin: {
+//                register: "...",
+//                options: require("./config/plugins/...")
+//            },
+//            options: {}
+//        }
+//     );
+// }
 
-if(Config.get('blipp')!=='false'){
-    manifest.registrations.push(
-        {
-            plugin: {
-                register: 'blipp',
-                options: require('./config/plugins/blipp')
-            },
-            options: {}
-        }
-    );
-}
 
 
 const glueOptions = {
+    clone: false,
     relativeTo: __dirname,
     preRegister: function (server, next){
 
@@ -139,7 +143,7 @@ const glueOptions = {
 
         console.log('[glue]: executing preConnections (called prior to adding connections to the server)');
         next();
-    }
+    },
 };
 
 Glue.compose(manifest, glueOptions, function (err, server) {

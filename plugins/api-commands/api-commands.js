@@ -122,8 +122,8 @@ internals.updateLogState = function updateLogState(value){
     const input = {
         gpioState: !!Number(value),
         userId: null,
-        //interval: internals.interval / 1000  // the interval in postgres is defined in seconds
-        interval: 'abc'
+        interval: internals.interval / 1000  // the interval in postgres is defined in seconds
+        //interval: 'abc'
     };
 
     Db.func('update_log_state', JSON.stringify(input))
