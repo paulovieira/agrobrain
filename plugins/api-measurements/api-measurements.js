@@ -1,12 +1,15 @@
 'use strict';
 
 const Path = require('path');
+const Config = require('nconf');
 const Joi = require('joi');
 const Boom = require('boom');
 const Pg = require('pg');
-const Config = require('nconf');
+const Promise = require('bluebird');
+//const Wreck = require('wreck');
 const Sql = require('./sql-templates');
-const Wreck = require('wreck');
+const Db = require('../../database');
+const Utils = require('../../utils/util');
 
 const internals = {};
 
@@ -30,15 +33,17 @@ exports.register = function (server, options, next){
     if (!options.syncInterval){
         return next(new Error('syncInterval is required'));
     }
-    if (!options.syncMax){
-        return next(new Error('syncMax is required'));
+    if (!options.syncLimit){
+        return next(new Error('syncLimit is required'));
     }
+
+    internals.syncLimit = options.syncLimit;
 
     // these queries don't change after the plugin is registered, so we store it in the internals
     internals.aggQuery     = Sql.aggregate(options.aggInterval);
-    internals.aggSyncQuery = Sql.aggregateSync(options.syncMax);
-    internals.measurementsSyncQuery = Sql.measurementsSync(options.syncMax);
-    internals.logStateSyncQuery     = Sql.logStateSync(options.syncMax);
+    internals.aggSyncQuery = Sql.aggregateSync(options.syncLimit);
+    internals.measurementsSyncQuery = Sql.measurementsSync(options.syncLimit);
+    internals.logStateSyncQuery     = Sql.logStateSync(options.syncLimit);
     
 
     // aggregate data every N min (N = options.aggInterval);
@@ -198,6 +203,42 @@ internals.syncOptions = {
 
 internals.execAggSync = function(){
 
+    // parallel select queries
+    var sql = [
+        `select * from read_measurements(' ${ JSON.stringify({ syncLimit: internals.syncLimit }) } ')`,
+        `select * from read_agg('          ${ JSON.stringify({ syncLimit: internals.syncLimit }) } ')`,
+        `select * from read_log_state('    ${ JSON.stringify({ syncLimit: internals.syncLimit }) } ')`
+    ];
+
+    Promise.all(sql.map(s => Db.query(s)))
+        .spread(function(measurements, agg, logState){
+
+            // change date format (is it really necessary?)
+            measurements.forEach( obj => obj.ts = obj.ts.toISOString() );
+
+            agg.forEach( obj => obj.ts = obj.ts.toISOString() );
+
+            logState.forEach( (obj) => { 
+                obj.ts_start = obj.ts_start.toISOString();
+                obj.ts_end   = obj.ts_end.toISOString();
+            });
+
+            console.log(agg)
+
+            // TODO: promisify wreck; send data; handle response; handle error; change name of the method; move this into a separate plugin
+
+        })
+        .catch(function(err){
+
+            console.log(Object.keys(err))
+            Utils.logErr(err, ['execAggSync']);
+        });
+
+/*
+    console.log(Sql.selectForSync.t_agg(internals.syncLimit))
+    console.log(Sql.selectForSync.t_measurements(internals.syncLimit))
+    console.log(Sql.selectForSync.t_log_state(internals.syncLimit))
+
     Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
 
         if (err) {
@@ -295,7 +336,7 @@ internals.execAggSync = function(){
             });
         });
     });
-
+*/
 
 };
 

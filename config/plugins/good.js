@@ -11,7 +11,7 @@ const internals = {};
 //internals.maxSize = '5K';
 internals.maxSize = '1M';
 internals.logDir = Path.join(Config.get('rootDir'), 'logs');
-
+internals.opsInterval = Config.get('env') === 'dev' ? 1 : 120;  // in seconds
 
 /*
 ops - System and process performance - CPU, memory, disk, and other metrics.
@@ -23,8 +23,7 @@ request - Request logging information. This maps to the hapi 'request' event tha
 
 module.exports = {
     ops: {
-        interval: 120 * 1000
-        //interval: 1 * 1000
+        interval: internals.opsInterval * 1000
     }
 };
 
@@ -122,8 +121,6 @@ else if (Config.get('env') === 'production'){
     }
 
 }
-
-
 
 
 module.exports.reporters = internals.reporters;
