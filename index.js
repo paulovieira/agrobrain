@@ -68,13 +68,15 @@ const manifest = {
             },
             options: {}
         },
+        
         {
             plugin: {
                 register: 'good',
                 options: require('./config/plugins/good')
             },
             options: {}
-        }
+        },
+
         {
             plugin: {
                 register: 'nes',
@@ -117,17 +119,7 @@ const manifest = {
 
 // load the remaining plugins, unless they are explicitely turned off in a command line option
 
-// if(Config.get('my-plugin')!=='false'){
-//     manifest.registrations.push(
-//        {
-//            plugin: {
-//                register: "...",
-//                options: require("./config/plugins/...")
-//            },
-//            options: {}
-//        }
-//     );
-// }
+
 
 
 
