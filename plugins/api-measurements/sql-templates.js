@@ -41,7 +41,7 @@ VALUES
 ),
         `;
     }
-    console.log(sql)
+
     // remove the comma in the tail (we know l > 0)
     return sql.trim().slice(0, -1);
 };
