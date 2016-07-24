@@ -142,7 +142,9 @@ order by mac, sid, type, description
     return sql;
 };
 
-module.exports.aggregateSync = function(n){
+module.exports.selectForSync = {};
+
+module.exports.aggregateSync = module.exports.selectForSync.t_agg = function(n){
 
     var sql = `
 select 
@@ -165,7 +167,7 @@ limit ${ n };
     return sql;
 };
 
-module.exports.measurementsSync = function(n) {
+module.exports.measurementsSync = module.exports.selectForSync.t_measurements = function(n) {
 
     const sql = `
 
@@ -189,7 +191,7 @@ limit ${ n };
     return sql;
 };
 
-module.exports.logStateSync = function(n) {
+module.exports.logStateSync = module.exports.selectForSync.t_log_state = function(n) {
 
     const sql = `
 
