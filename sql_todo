@@ -1,0 +1,232 @@
+
+DROP FUNCTION IF EXISTS update_sync_field(json);
+
+CREATE FUNCTION update_sync_field(input_obj json)
+
+returns setof t_log_state as
+--RETURNS TABLE(
+--    id int
+--) AS 
+
+$BODY$
+
+DECLARE
+	
+command text;
+rec record;
+id_temp int;
+
+-- variables for input data
+_table text;
+_new_value bool;
+_ids jsonb;
+
+
+BEGIN
+
+-- assign input data
+_table := input_obj->>'table';
+_new_value := COALESCE((input_obj->>'value')::bool, true);
+_ids := input_obj->>'ids';
+
+ raise notice '_table: %', _table;
+ raise notice '_new_value: %', _new_value;
+ raise notice '_ids: %', _ids;
+
+command := format('
+
+update %I 
+set sync = %L
+where id = 248
+
+
+',
+_table, 
+_new_value,
+_ids::text
+);
+--where id in (select * from jsonb_to_recordset('' %s '') as x(id int))
+ raise notice 'command: %', command;
+
+
+FOR rec in (select * from jsonb_to_recordset(_ids) as x(id int))
+LOOP
+
+	command := format('
+
+	update %I 
+	set sync = %L
+	where id = %L
+	returning *;
+
+	',
+	_table, 
+	_new_value,
+	rec.id
+	);
+
+	RAISE NOTICE 'command: %', command;
+	RETURN QUERY EXECUTE command;
+	--RETURN;
+END LOOP;
+
+    
+
+--command = 'select id from t_log_state';
+--RETURN QUERY EXECUTE command;
+RETURN;
+
+END;
+$BODY$
+LANGUAGE plpgsql;
+
+
+select * from update_sync_field('{ "table": "t_log_state", "value": false, "ids": [{"id": 247}, {"id": 248}] }');
+
+
+
+select * from t_log_state
+select ('[{"id": 1}, {"id": 2}]'::text::jsonb)::text
+select * from jsonb_to_recordset('[{"id": 1}, {"id": 2}]'::text::jsonb) as x(id int)
+
+select * from t_log_state where id in 
+(select * from jsonb_to_recordset('[{"id": 247}, {"id": 248}]'::text::jsonb) as x(id int))
+
+
+
+--delete from t_log_state
+
+
+
+
+
+
+select '{userId}'::text[]
+select '{"userId"}'::text[]
+select '{1,2}'::int[]
+select ARRAY[1,2]
+
+perform jsonb_set('{}', '{xyz}', '"x"')
+
+
+
+
+
+
+
+
+
+select * from t_log_state order by id desc limit 1
+
+
+DROP FUNCTION IF EXISTS update_sync_field(json);
+
+CREATE FUNCTION update_sync_field(input_obj json)
+RETURNS TABLE(
+    id int
+) AS 
+$BODY$
+DECLARE
+	
+	_table text;
+	_value bool;
+	_ids jsonb;
+	
+	command text;
+	command2 text;
+/*
+	_gpio_state bool;
+	_user_id    text;
+	_interval   interval;
+
+	_last_row   t_log_state%ROWTYPE;
+	_event      jsonb;
+	_now        timestamptz;
+*/
+
+BEGIN
+
+_table := input_obj->>'table';
+_value := COALESCE((input_obj->>'value')::bool, true);
+_ids := input_obj->>'ids';
+
+ raise notice '_table: %', _table;
+ raise notice '_value: %', _value;
+ raise notice '_ids: %', _ids;
+
+
+command = 'select id from t_measurements limit 1';
+command2 := format(
+	'update %I set sync = %L where id in (',
+_table, _value
+);
+raise notice 'command2: %', command2;
+
+RETURN QUERY EXECUTE command;
+RETURN;
+
+END;
+$BODY$
+LANGUAGE plpgsql;
+
+
+select * from update_sync_field('{ "value": false, "table": "t_agg", "ids": [{"id": 1}, {"id": 2}] }');
+
+
+
+
+
+
+
+
+
+update t_measurements set sync = false;
+update t_agg set sync = false;
+update t_log_state set sync = false;
+
+select * from t_measurements;
+select * from t_agg;
+select * from t_log_state order by id;
+
+
+select * from update_log_state('{"gpioState":true,"userId":null,"interval":3}')
+
+
+select 
+    id,
+    mac, 
+    sid,
+    type,
+    description,
+    avg,
+    stddev,
+    n,
+    ts,
+    battery
+from t_agg
+where sync = false
+order by id
+limit 100;
+
+
+create view sync_measurements as
+select 
+    id,
+    mac, 
+    sid,
+    type,
+    description,
+    val,
+    ts,
+    battery,
+    agg
+from t_measurements
+where sync = false
+order by id
+limit 100;
+
+
+select * from sync_measurements
+
+
+select * from t_measurements
