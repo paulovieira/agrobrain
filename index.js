@@ -123,7 +123,6 @@ const manifest = {
 
 
 const glueOptions = {
-    clone: false,
     relativeTo: __dirname,
     preRegister: function (server, next){
 
