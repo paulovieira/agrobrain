@@ -1,15 +1,14 @@
 'use strict';
 
 require('./config/load');
+require('./config/promisify');
 
 const Config = require('nconf');
 const Glue = require('glue');
 const Hoek = require('hoek');
 const Chalk = require('chalk');
-//const Pg = require('pg');
 const Db = require('./database');
 const Utils = require('./utils/util');
-//var Db = require('./database');
 
 process.title = Config.get('applicationTitle');
 
@@ -124,7 +123,6 @@ const manifest = {
 
 
 const glueOptions = {
-    clone: false,
     relativeTo: __dirname,
     preRegister: function (server, next){
 

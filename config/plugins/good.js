@@ -11,7 +11,7 @@ const internals = {};
 //internals.maxSize = '5K';
 internals.maxSize = '1M';
 internals.logDir = Path.join(Config.get('rootDir'), 'logs');
-internals.opsInterval = Config.get('env') === 'dev' ? 1 : 120;  // in seconds
+internals.opsInterval = Config.get('env') === 'dev' ? 1 : 180;  // in seconds
 
 /*
 ops - System and process performance - CPU, memory, disk, and other metrics.
@@ -30,7 +30,6 @@ module.exports = {
 
 internals.reporters = {};
  
-
 // add good reporters, unless they are explicitely turned off
 
 if (Config.get('env') === 'dev'){
@@ -79,6 +78,15 @@ if (Config.get('env') === 'dev'){
 // it can be added explicitely with the 'reporter-console' command line option
 else if (Config.get('env') === 'production'){
 
+    if ( String(Config.get('reporter-console')) === 'true'){
+        // general log to the console
+        internals.reporters['console'] = [
+            new GoodSqueeze.Squeeze({ log: '*', response: '*', request: '*', error: '*' }),
+            new GoodConsole(),
+            process.stdout
+        ];
+    }
+
     // general log file (pretty much all goes here!)
     internals.reporters['general-file'] = [
         new GoodSqueeze.Squeeze({ log: '*', response: '*', request: '*' }),
@@ -109,16 +117,6 @@ else if (Config.get('env') === 'production'){
             args: [ 'ops.log', { size: internals.maxSize, path: internals.logDir } ]  
         }
     ];
-
-
-    if ( String(Config.get('reporter-console')) === 'true'){
-        // general log to the console
-        internals.reporters['console'] = [
-            new GoodSqueeze.Squeeze({ log: '*', response: '*', request: '*', error: '*' }),
-            new GoodConsole(),
-            process.stdout
-        ];
-    }
 
 }
 

@@ -69,6 +69,9 @@ module.exports.gpioWriteSync = function (pin, value){
 
 module.exports.logErr = function (err, tags){
 
+    tags = tags || [];
+    tags.push('error');
+
     // we consider 3 types of error objects: 1) general errors 2) postgres errors 3) boom errors
     // 2) and 3) have more properties than the general errors
 
@@ -77,12 +80,14 @@ module.exports.logErr = function (err, tags){
     for (let key in err){
         if (key === 'name'){
             errType = 'postgres';
+            tags.push('postgres');
             break;
         }
     }
 
     if (err.isBoom){
         errType = 'boom';
+        tags.push('boom');
     }
 
     const logObj = { message: err. message };
@@ -119,11 +124,9 @@ module.exports.logErr = function (err, tags){
     }
 
     logObj['stack'] = err['stack'];
-//console.log("logObj: ", logObj)
 
-    tags = tags || [];
-    tags.push('error');
+    //console.log("logObj: ", logObj)
     //console.log("tags: ", tags)
-    internals.server.log(tags, logObj);
 
+    internals.server.log(tags, logObj);
 };

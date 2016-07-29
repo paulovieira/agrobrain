@@ -12,13 +12,18 @@ RETURNS TABLE(
 $BODY$
 
 DECLARE
-    _limit int;
-    _command text;
+
+command text;
+
+-- variables for input data
+_sync_limit int;
 
 BEGIN
 
-_limit := COALESCE((input->>'syncLimit')::int, 100);
-_command := format('
+-- assign input data
+_sync_limit := COALESCE((input->>'syncLimit')::int, 100);
+
+command := format('
 
 select 
     id,
@@ -31,11 +36,11 @@ order by id
 limit %s;
 
 
-', _limit);
+', _sync_limit);
 
---raise notice '_command: %', _command;   
+--raise notice 'command: %', command;   
 
-RETURN QUERY EXECUTE _command;
+RETURN QUERY EXECUTE command;
 RETURN;
 
 END;

@@ -6,7 +6,8 @@ const Joi = require('joi');
 const Boom = require('boom');
 const Pg = require('pg');
 const Promise = require('bluebird');
-//const Wreck = require('wreck');
+const Wreck = require('wreck');
+
 const Sql = require('./sql-templates');
 const Db = require('../../database');
 const Utils = require('../../utils/util');
@@ -214,6 +215,7 @@ internals.execAggSync = function(){
         .spread(function(measurements, agg, logState){
 
             // change date format (is it really necessary?)
+/*
             measurements.forEach( obj => obj.ts = obj.ts.toISOString() );
 
             agg.forEach( obj => obj.ts = obj.ts.toISOString() );
@@ -222,11 +224,38 @@ internals.execAggSync = function(){
                 obj.ts_start = obj.ts_start.toISOString();
                 obj.ts_end   = obj.ts_end.toISOString();
             });
+*/
+            //console.log(agg)
 
-            console.log(agg)
+            internals.syncOptions.payload = undefined;
+            internals.syncOptions.payload = JSON.stringify({
+                agg: agg,
+                measurements: measurements,
+                logState: logState 
+            });
+
+            return Wreck.putAsync(internals.syncUrlAgg, internals.syncOptions);
 
             // TODO: promisify wreck; send data; handle response; handle error; change name of the method; move this into a separate plugin
 
+        })
+        .spread(function (response, serverPayload){
+
+            if (response.statusCode !== 200){
+                const errorMessage = 'sync failed because response from the server was not 200';
+                const errorData = { payload: serverPayload };
+
+                throw Boom.create(response.statusCode, errorMessage, errorData);
+            }
+
+            // update the sync status in the local database
+
+            console.log("serverPayload: ", serverPayload);
+            //internals.updateSyncStatus('t_agg', serverPayload.agg);
+            //internals.updateSyncStatus('t_measurements', serverPayload.measurements);
+            //internals.updateSyncStatus('t_log_state', serverPayload.logState);
+
+            return;
         })
         .catch(function(err){
 
