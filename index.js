@@ -92,6 +92,7 @@ const manifest = {
             options: {}
         },
 
+        // TODO: the syncronization should be done in a separate plugin
         {
             plugin: {
                 register: './plugins/api-measurements/api-measurements.js',
@@ -117,9 +118,6 @@ const manifest = {
 
 
 // load the remaining plugins, unless they are explicitely turned off in a command line option
-
-
-
 
 
 const glueOptions = {

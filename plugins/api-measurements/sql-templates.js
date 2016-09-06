@@ -8,6 +8,7 @@ internals.maxValH = 2000;
 internals.minValT = -20;
 internals.maxValT = 80;
 
+/*
 module.exports.insert = function insert(qsObj){
 
     const mac = qsObj.mac;
@@ -45,7 +46,7 @@ VALUES
     // remove the comma in the tail (we know l > 0)
     return sql.trim().slice(0, -1);
 };
-
+*/
 
 
 /*

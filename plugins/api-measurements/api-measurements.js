@@ -7,6 +7,7 @@ const Boom = require('boom');
 const Pg = require('pg');
 const Promise = require('bluebird');
 const Wreck = require('wreck');
+var Hoek = require('hoek');
 
 const Sql = require('./sql-templates');
 const Db = require('../../database');
@@ -24,25 +25,23 @@ internals.measurementSchema = Joi.object({
     desc: Joi.string()
 });
 
+internals.optionsSchema = Joi.object({
+    pathReadings: Joi.string().default('/readings'),
+    syncInterval: Joi.number().integer().positive(),
+    syncLimit: Joi.number().integer().positive()
+});
+
 exports.register = function (server, options, next){
 
+    const validatedOptions = Joi.validate(options, internals.optionsSchema);
+    Hoek.assert(!validatedOptions.error, validatedOptions.error);
+
+    options = internals.options = validatedOptions.value;
     internals.server = server;
 
-    if (!options.aggInterval){
-        return next(new Error('aggInterval is required'));
-    }
-    if (!options.syncInterval){
-        return next(new Error('syncInterval is required'));
-    }
-    if (!options.syncLimit){
-        return next(new Error('syncLimit is required'));
-    }
-
-    internals.syncLimit = options.syncLimit;
-
     // these queries don't change after the plugin is registered, so we store it in the internals
-    internals.aggQuery     = Sql.aggregate(options.aggInterval);
-    internals.aggSyncQuery = Sql.aggregateSync(options.syncLimit);
+    //internals.aggQuery     = Sql.aggregate(options.aggInterval);
+    //internals.aggSyncQuery = Sql.aggregateSync(options.syncLimit);
     internals.measurementsSyncQuery = Sql.measurementsSync(options.syncLimit);
     internals.logStateSyncQuery     = Sql.logStateSync(options.syncLimit);
     
@@ -50,13 +49,14 @@ exports.register = function (server, options, next){
     // aggregate data every N min (N = options.aggInterval);
     // timer functions are executed for the first time only after 
     // the time length of the aggInterval has passed
-    setInterval(internals.execAggregate, options.aggInterval * internals['oneMinute']);
+    /// setInterval(internals.execAggregate, options.aggInterval * internals['oneMinute']);
 
-    // sync data every 3 minutes
-    setInterval(internals.execAggSync,   options.syncInterval * internals['oneMinute']);
+    // sync data with cloud every syncInterval minutes
+    //setInterval(internals.execAggSync,  options.syncInterval * internals['oneMinute']);
+    setInterval(internals.sync,  options.syncInterval * internals['oneMinute']);
 
     server.route({
-        path: options.pathReadings || '/readings',
+        path: options.pathReadings,
         method: 'GET',
         config: {
 
@@ -101,42 +101,39 @@ exports.register = function (server, options, next){
         */
         handler: function (request, reply) {
 
-            // if(Config.get('env')==='production'){
-            //     console.log(request.query);
-            // }
-            console.log(request.query)
-            Pg.connect(Config.get('db:postgres'), function (err, pgClient, done) {
+            const mac = request.query.mac;
+            request.query.data.forEach((obj) => {
 
-                let boom;
-                if (err) {
-                    boom = Boom.badImplementation();
-                    boom.output.payload.message = err.message;
-                    return reply(boom);
-                }
+                // mac is not part of the data objects
+                obj.mac = mac;
 
-                pgClient.query(Sql.insert(request.query), function(err, result) {
-
-                    done();
-
-                    if (err) {
-                        boom = Boom.badImplementation();
-                        boom.output.payload.message = err.message;
-                        return reply(boom);
-                    }
-
-                    if (result.rowCount === 0){
-                        boom = Boom.badImplementation();
-                        boom.output.payload.message = 'result.rowCount should be > 0 (data was not saved?)';
-                        return reply(boom);
-                    }
-
-                    return reply({ newRecords: result.rowCount, ts: new Date().toISOString() });
-                });
+                // the keys in the query string and the names of the columns in db do not match;
+                // correct in the data objects
+                obj.description = obj.desc;  // the column in the table is 'description'
+                obj.val = obj.value;  // the column in the table is 'val'
+                
+                // note: the other keys in the query string match the names of the columns
             });
+
+            const query = `select * from insert_measurements(' ${ JSON.stringify(request.query.data, null, 2) } ')`;
+            //console.log(query);
+
+            Db.query(query)
+                .then(function (result){
+
+                    return reply({ newRecords: result.length, ts: new Date().toISOString() });
+                })
+                .catch(function (err){
+
+                    Utils.logErr(err);
+                    return reply(err);
+                });
+
         }
     });
 
-    // route to manually execute the aggregate query (to be used in dev mode only, along with the insert_fake_data.sh script)
+    // test route - manually execute the aggregate query (to be used in dev mode only)
+/*
     server.route({
         path: '/agg',
         method: 'GET',
@@ -147,9 +144,9 @@ exports.register = function (server, options, next){
             return reply(`[${ new Date().toISOString() }]: check the output in the console`);
         }
     });
-
+*/
     server.route({
-        path: '/sync',
+        path: '/test/sync',
         method: 'GET',
         config: {},
         handler: function (request, reply) {
@@ -162,7 +159,7 @@ exports.register = function (server, options, next){
     return next();
 };
 
-
+/*
 internals.execAggregate = function(){
 
     Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
@@ -187,7 +184,7 @@ internals.execAggregate = function(){
         });
     });
 };
-
+*/
 internals.syncUrlAgg = Config.get('syncUrlAgg') + '?clientToken=' + Config.get('clientToken');
 internals.syncUrlMeasurements = Config.get('syncUrlMeasurements') + '?clientToken=' + Config.get('clientToken');
 
@@ -206,9 +203,9 @@ internals.execAggSync = function(){
 
     // parallel select queries
     var sql = [
-        `select * from read_measurements(' ${ JSON.stringify({ syncLimit: internals.syncLimit }) } ')`,
-        `select * from read_agg('          ${ JSON.stringify({ syncLimit: internals.syncLimit }) } ')`,
-        `select * from read_log_state('    ${ JSON.stringify({ syncLimit: internals.syncLimit }) } ')`
+        `select * from read_measurements(' ${ JSON.stringify({ syncLimit: internals.option.syncLimit }) } ')`,
+        `select * from read_agg('          ${ JSON.stringify({ syncLimit: internals.option.syncLimit }) } ')`,
+        `select * from read_log_state('    ${ JSON.stringify({ syncLimit: internals.option.syncLimit }) } ')`
     ];
 
     Promise.all(sql.map(s => Db.query(s)))
