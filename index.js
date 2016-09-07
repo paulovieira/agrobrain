@@ -55,7 +55,7 @@ const manifest = {
 //        {
 //            plugin: {
 //                register: "...",
-//                options: require("./config/plugins/...")
+//                options: Config.get('plugins:...')
 //            },
 //            options: {}
 //        },
@@ -63,7 +63,7 @@ const manifest = {
         {
             plugin: {
                 register: 'blipp',
-                options: require('./config/plugins/blipp')
+                options: Config.get('plugins:blipp')
             },
             options: {}
         },
@@ -71,7 +71,7 @@ const manifest = {
         {
             plugin: {
                 register: 'good',
-                options: require('./config/plugins/good')
+                options: Config.get('plugins:good')
             },
             options: {}
         },
@@ -79,7 +79,7 @@ const manifest = {
         {
             plugin: {
                 register: 'nes',
-                options: require('./config/plugins/nes')
+                options: Config.get('plugins:nes')
             },
             options: {}
         },
@@ -92,17 +92,24 @@ const manifest = {
             options: {}
         },
 
-        // TODO: the syncronization should be done in a separate plugin
         {
             plugin: {
                 register: './plugins/api-measurements/api-measurements.js',
-                options: require('./config/plugins/api-measurements')
+                options: Config.get('plugins:api-measurements')
             },
             options: {
                 routes: {
                     prefix: '/api/v1'
                 }
             }
+        },
+
+        {
+            plugin: {
+                register: './plugins/sync-cloud/sync-cloud.js',
+                options: Config.get('plugins:sync-cloud')
+            },
+            options: {}
         },
 
         {
@@ -115,7 +122,6 @@ const manifest = {
 
     ]
 };
-
 
 // load the remaining plugins, unless they are explicitely turned off in a command line option
 

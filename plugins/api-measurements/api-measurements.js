@@ -1,3 +1,10 @@
+/*
+
+plugin: api-measurements
+description: creates an API endpoint to receive data from the clients (microcontrolers such as huzzahs, arduinos, etc) and save to the local db
+
+*/
+
 'use strict';
 
 const Path = require('path');
@@ -26,9 +33,7 @@ internals.measurementSchema = Joi.object({
 });
 
 internals.optionsSchema = Joi.object({
-    pathReadings: Joi.string().default('/readings'),
-    syncInterval: Joi.number().integer().positive(),
-    syncLimit: Joi.number().integer().positive()
+    pathReadings: Joi.string().default('/readings')
 });
 
 exports.register = function (server, options, next){
@@ -37,7 +42,7 @@ exports.register = function (server, options, next){
     Hoek.assert(!validatedOptions.error, validatedOptions.error);
 
     options = internals.options = validatedOptions.value;
-    internals.server = server;
+    ///internals.server = server;
 
     // these queries don't change after the plugin is registered, so we store it in the internals
     //internals.aggQuery     = Sql.aggregate(options.aggInterval);
@@ -53,8 +58,40 @@ exports.register = function (server, options, next){
 
     // sync data with cloud every syncInterval minutes
     //setInterval(internals.execAggSync,  options.syncInterval * internals['oneMinute']);
-    setInterval(internals.sync,  options.syncInterval * internals['oneMinute']);
+    //setInterval(internals.sync,  options.syncInterval * internals['oneMinute']);
 
+
+
+    /*
+    The query string should have the format:
+
+    ?mac=334&
+    battery=50.1&
+
+    data[0][sid]=1&
+    data[0][value]=20.1&
+    data[0][type]=t&
+    data[0][desc]=microfone_1&
+
+    ...
+
+    data[n][sid]=n+1&
+    data[n][value]=80.1&
+    data[n][type]=h&
+    data[n][desc]=microfone_1&
+
+    The data of each measurement must be in the "data[n]" structure. In this case the request would be sending n+1 measurements
+
+    example:
+
+    export AGROBRAIN_LOCAL_SEVER=192.168.1.100
+    export AGROBRAIN_LOCAL_SEVER=127.0.0.1
+
+    curl -v -L -G  \
+        -d 'mac=aa-bb-cc&battery=294.12&data[0][sid]=1&data[0][value]=20.1&data[0][type]=t&data[0][desc]=microfone_1'  \
+        http://$AGROBRAIN_LOCAL_SEVER:8001/api/v1/readings
+
+    */
     server.route({
         path: options.pathReadings,
         method: 'GET',
@@ -72,33 +109,8 @@ exports.register = function (server, options, next){
                     allowUnknown: true
                 }
             }
-
         },
 
-
-        /*
-
-        curl -v -L -G -d 'xmac=999-888-777&data[0][sid]=1234&data[0][value]=10.1&data[0][type]=t&data[0][desc]=microfone_1' http://$AGROBRAIN_LOCAL_SEVER:8001/api/v1/readingsx;
-
-
-
-        mac=334&
-        data[0][sid]=834&
-        data[0][value]=23.3&
-        data[0][type]=t&
-        data[0][desc]=microfone_1
-
-        the combination of sid and type is unique
-
-        export AGROBRAIN_LOCAL_SEVER=192.168.1.100
-        export AGROBRAIN_LOCAL_SEVER=127.0.0.1
-
-        curl -v -L -G -d 'mac=999-888-555&data[0][sid]=1234&data[0][value]=10.1&data[0][type]=t&data[0][desc]=microfone_1' http://$AGROBRAIN_LOCAL_SEVER:8001/api/v1/readings
-
-        curl -v -L -G -d 'mac=999-888-555&data[0][sid]=1234&data[0][value]=20.1&data[0][type]=t&data[0][desc]=microfone_1' http://$AGROBRAIN_LOCAL_SEVER:8001/api/v1/readings
-                 
-
-        */
         handler: function (request, reply) {
 
             const mac = request.query.mac;
@@ -128,7 +140,6 @@ exports.register = function (server, options, next){
                     Utils.logErr(err);
                     return reply(err);
                 });
-
         }
     });
 
@@ -145,6 +156,8 @@ exports.register = function (server, options, next){
         }
     });
 */
+
+/*
     server.route({
         path: '/test/sync',
         method: 'GET',
@@ -155,7 +168,7 @@ exports.register = function (server, options, next){
             return reply(`[${ new Date().toISOString() }]: check the output in the console`);
         }
     });
-
+*/
     return next();
 };
 
@@ -366,6 +379,7 @@ internals.execAggSync = function(){
 
 };
 
+/*
 internals.updateSyncStatus = function (table, ids){
 
     Pg.connect(Config.get('db:postgres'), function (err, pgClient, done) {
@@ -395,6 +409,7 @@ internals.updateSyncStatus = function (table, ids){
         });
     });
 };
+*/
 
 exports.register.attributes = {
     name: Path.parse(__dirname).name  // use the name of the directory

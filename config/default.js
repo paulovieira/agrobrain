@@ -1,95 +1,106 @@
-var Path = require("path");
+'use strict';
 
-var internals = {
-    rootDir: Path.join(__dirname, "..")
+const Path = require('path');
+
+const internals = {
+    rootDir: Path.join(__dirname, '..')
 };
 
 module.exports = {
    
+    rootDir: internals.rootDir,
     applicationTitle: 'agrobrain-local-server',
 
-    host: "localhost",
+    host: 'localhost',
     port: 8001,
 
-    publicUrl: "",  // host
+    publicUrl: '',  // host
     publicPort: 8001,  // probably 80
-    publicIp: "127.0.0.1",
+    publicIp: '127.0.0.1',
 
     clientToken: '',
     
-    syncUrlBase: '',
-    syncUrlAgg: '/api/v1/sync',
-    syncUrlMeasurements: '/api/v1/sync/measurements',
+    // syncUrlBase: '',
+    // syncUrlAgg: '/api/v1/sync',
+    // syncUrlMeasurements: '/api/v1/sync/measurements',
 
-
-    rootDir: internals.rootDir,
+    baseUrlCloud: '',
 
     db: {
 
         postgres: {
-            host: "localhost",
+            host: 'localhost',
             port: 5432,
-            database: "",
-            username: "",
-            password: "",
-        },
+            database: '',
+            username: '',
+            password: ''
+        }
     },
 
-    hapi: {
+    plugins: {
 
-        ironPassword: "",
-/*
-        // options for the Hapi.Server object (to be used in the main index.js)
-        server: {
+        'nes': {
 
-            //  default connections configuration
-            connections: {
+            onConnection: function (socket){
 
-                // controls how incoming request URIs are matched against the routing table
-                router: {
-                    isCaseSensitive: false,
-                    stripTrailingSlash: true
-                },
+                console.log('new client (should never be called because we are a client): ', socket.id);
+            },
+            onDisconnection: function (socket){
 
-                // default configuration for every route.
-                routes: {
-                    state: {
-                        // determines how to handle cookie parsing errors ("ignore" = take no action)
-                        failAction: "ignore"
-                    },
+                console.log('terminated client (should never be called because we are a client): ', socket.id);
+            },
+            onMessage: function (socket, message, next){
 
-                    // disable node socket timeouts (useful for debugging)
-                    timeout: {
-                        server: false,
-                        socket: false
-                    }
-                }
+                console.log('new message (should never be called because we are a client): ', message);
+                console.log('client: ', socket.id);
+                const data = { status: 'received', ts: new Date().toISOString() };
+
+                return next(data);
+            },
+
+            auth: false,
+
+            payload: {
+
+                // maximum number of characters allowed in a single WebSocket message;
+                // important when using the protocol over a slow network with large updates as the transmission
+                // time can exceed the timeout or heartbeat limits which will cause the client to disconnect.
+                maxChunkChars: false
+            },
+
+            heartbeat: {
+                interval: 15000,
+                timeout: 10000
             }
         },
-*/
 
-        // documentation: https://github.com/hapijs/joi#validatevalue-schema-options-callback
-        joi: {
-/*
-            abortEarly: true,  // returns all the errors found (does not stop on the first error)
-            stripUnknown: true,  // delete unknown keys; this means that when the handler executes, only the keys that are explicitely stated
-            // in the schema will be present in request.payload and request.query 
-            convert: true
-*/
-
-    /*
-
-            allowUnknown: false, // allows object to contain unknown keys; note that is stipUnknown option is used, this becomes obsolete (because all unknown keys will be removed before the check for unknown keys is done)
-
-            convert: ...
-            skipFunctions: ...
-            stripUnknown: ...
-            language: ...
-            presence: ...
-            context: ...
-    */
+        // good configuration is completely defined in each mode configuration
+        'good': {
         },
-    },
+
+        'blipp': { 
+            showAuth: true,
+            showStart: true
+        },
+
+        'api-commands': {
+            
+        },
+
+        'api-measurements': {
+            pathReadings: '/readings'
+        },
+
+        'sync-cloud': {
+            // length of the interval (in minutes) to sync data with agrobrain-cloud; 
+            interval: 4,
+
+            // max number of rows to send when doing a sync; 
+            limit: 500,
+
+            // api endpoint to sync data (agrobrain-cloud)
+            path: ''
+        }
+    }
 
 };
-

@@ -21,12 +21,12 @@ DECLARE
 command text;
 
 -- variables for input data
-_sync_limit int;
+_limit int;
 
 BEGIN
 
 -- assign input data
-_sync_limit := COALESCE((input->>'syncLimit')::int, 100);
+_limit := COALESCE((input->>'limit')::int, 500);
 
 command := format('
 
@@ -45,7 +45,7 @@ where sync = false
 order by id
 limit %s;
 
-', _sync_limit);
+', _limit);
 
 --raise notice 'command: %', command;	
 
@@ -61,6 +61,6 @@ LANGUAGE plpgsql;
 /*
 
 select * from read_measurements('{}');
-select * from read_measurements('{ "syncLimit": 5}');
+select * from read_measurements('{ "limit": 5}');
 
 */
