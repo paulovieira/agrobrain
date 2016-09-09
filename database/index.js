@@ -15,8 +15,7 @@ internals.pgpConfig = {
 internals.pgp = PgPromise(internals.pgpConfig);
 
 // activate postgres monitor; we must use the same configuration object that was used to initialize pg-promise;
-
-if ( String(Config.get('pg-monitor')) === 'true'){
+if (String(Config.get('pg-monitor')) === 'true'){
     PgMonitor.attach(internals.pgpConfig);
 }
 
@@ -38,11 +37,4 @@ internals.connection = internals.pgp({
     // poolSize: ...,
 });
 
-
 module.exports = internals.connection;
-
-// module.exports.endx = function (){
-
-//     PgPromise.end();
-//     console.log('All postgres connections have been released. Goodbye!');
-// };

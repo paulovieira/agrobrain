@@ -10,6 +10,7 @@ const Chalk = require('chalk');
 const Db = require('./database');
 const Utils = require('./utils/util');
 
+
 process.title = Config.get('applicationTitle');
 
 const manifest = {
@@ -43,14 +44,12 @@ const manifest = {
 
     connections: [
         {
-            //host: "localhost",
             address: Config.get('publicIp'),
-            port: Config.get("port")
+            port: Config.get('publicPort')
         }
     ],
 
     registrations: [
-
 
 //        {
 //            plugin: {
@@ -123,21 +122,18 @@ const manifest = {
     ]
 };
 
-// load the remaining plugins, unless they are explicitely turned off in a command line option
-
-
 const glueOptions = {
     relativeTo: __dirname,
     preRegister: function (server, next){
 
-        console.log('[glue]: executing preRegister (called prior to registering plugins with the server)');
+        //console.log('[glue]: executing preRegister (called prior to registering plugins with the server)');
         next();
     },
     preConnections: function (server, next){
 
-        console.log('[glue]: executing preConnections (called prior to adding connections to the server)');
+        //console.log('[glue]: executing preConnections (called prior to adding connections to the server)');
         next();
-    },
+    }
 };
 
 Glue.compose(manifest, glueOptions, function (err, server) {
@@ -145,23 +141,23 @@ Glue.compose(manifest, glueOptions, function (err, server) {
     Hoek.assert(!err, 'Failed registration of one or more plugins: ' + err);
 
     // start the server and finish the initialization process
-    server.start( function(err){
+    server.start( (err) => {
 
         Hoek.assert(!err, 'Failed server start: ' + err);
-
         Utils.setServer(server);
         
-        // show some informations about the server
-        console.log(Chalk.green('================='));
-        console.log('Hapi version: ' + server.version);
-        console.log('host: ' + server.info.host);
-        console.log('port: ' + server.info.port);
-        console.log('process.env.NODE_ENV: ', process.env.NODE_ENV);
+        // show some basic informations about the server
+        console.log(Chalk.cyan('================='));
+        console.log('hapi version:', server.version);
+        console.log('host:', server.info.host);
+        console.log('port:', server.info.port);
+        console.log('process.env.NODE_ENV:', process.env.NODE_ENV);
 
         Db.query('SELECT version()')
-            .then(function(result){
-                console.log('database: ', result[0].version);
-                console.log(Chalk.green('================='));
+            .then((result) => {
+
+                console.log('database:', result[0].version);
+                console.log(Chalk.cyan('================='));
             });
     });
 });

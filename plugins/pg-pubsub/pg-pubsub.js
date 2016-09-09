@@ -1,3 +1,5 @@
+/*
+
 const Path = require('path');
 const _ = require('underscore');
 const Boom = require('boom');
@@ -140,3 +142,4 @@ exports.register.attributes = {
     name: Path.parse(__dirname).name,  // use the name of the directory
 };
 
+*/

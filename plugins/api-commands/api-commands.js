@@ -3,7 +3,6 @@
 const Path = require('path');
 const Nes = require('nes');
 const Config = require('nconf');
-const Pg = require('pg');
 const Boom = require('boom');
 const Db = require('../../database');
 const Sql = require('./sql-templates');
@@ -16,7 +15,7 @@ internals.endpoints = {
     setState: '/api/v1/set-state'
 };
 
-internals.client = new Nes.Client(Config.get('websocketUrlBase'));
+internals.client = new Nes.Client('ws://' + Config.get('baseUrlCloud'));
 
 internals['tenSeconds'] = 10 * 1000;
 internals['threeSeconds'] = 3 * 1000;

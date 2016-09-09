@@ -12,7 +12,6 @@ const Path = require('path');
 const Config = require('nconf');
 const Joi = require('joi');
 const Boom = require('boom');
-const Pg = require('pg');
 const Promise = require('bluebird');
 const Wreck = require('wreck');
 var Hoek = require('hoek');
@@ -80,10 +79,10 @@ internals.wreckOptions = {
 internals.sync = function(){
 
     // parallel select queries
-    const sql = [
-        `select * from read_measurements(' ${ JSON.stringify({ limit: internals.options.limit }) } ')`,
-        `select * from read_log_state('    ${ JSON.stringify({ limit: internals.options.limit }) } ')`
-    ];
+    // TODO: verify the case when there are no rows returned
+    const sql = [];
+    sql.push(`select * from read_measurements(' ${ JSON.stringify({ limit: internals.options.limit }) } ')`);
+    sql.push(`select * from read_log_state('    ${ JSON.stringify({ limit: internals.options.limit }) } ')`);
 
     Promise.all(sql.map((s) => Db.query(s)))
         .spread(function(measurements, logState){

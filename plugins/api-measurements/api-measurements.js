@@ -11,7 +11,6 @@ const Path = require('path');
 const Config = require('nconf');
 const Joi = require('joi');
 const Boom = require('boom');
-const Pg = require('pg');
 const Promise = require('bluebird');
 const Wreck = require('wreck');
 var Hoek = require('hoek');
@@ -202,7 +201,7 @@ internals.syncUrlAgg = Config.get('syncUrlAgg') + '?clientToken=' + Config.get('
 internals.syncUrlMeasurements = Config.get('syncUrlMeasurements') + '?clientToken=' + Config.get('clientToken');
 
 internals.syncOptions = {
-    baseUrl: Config.get('syncUrlBase'),
+    baseUrl: 'http://' + Config.get('baseUrlCloud'),
     timeout: 30*1000,
     //payload: to be set below
 

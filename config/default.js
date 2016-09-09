@@ -2,32 +2,20 @@
 
 const Path = require('path');
 
-const internals = {
-    rootDir: Path.join(__dirname, '..')
-};
-
 module.exports = {
    
-    rootDir: internals.rootDir,
-    applicationTitle: 'agrobrain-local-server',
+    rootDir: Path.resolve(__dirname, '..'),
+    applicationTitle: 'agrobrain-local',
 
-    host: 'localhost',
-    port: 8001,
-
-    publicUrl: '',  // host
-    publicPort: 8001,  // probably 80
-    publicIp: '127.0.0.1',
+    publicIp: '',
+    publicPort: '',
 
     clientToken: '',
-    
-    // syncUrlBase: '',
-    // syncUrlAgg: '/api/v1/sync',
-    // syncUrlMeasurements: '/api/v1/sync/measurements',
-
+    gpioPin: '',
     baseUrlCloud: '',
 
     db: {
-
+        // should be redefined in some other configuration file (that should be present in .gitignore)
         postgres: {
             host: 'localhost',
             port: 5432,
@@ -74,7 +62,7 @@ module.exports = {
             }
         },
 
-        // good configuration is completely defined in each mode configuration
+        // good configuration is entirely defined the respective mode's file
         'good': {
         },
 
@@ -84,7 +72,6 @@ module.exports = {
         },
 
         'api-commands': {
-            
         },
 
         'api-measurements': {
@@ -102,5 +89,5 @@ module.exports = {
             path: ''
         }
     }
-
 };
+
