@@ -111,13 +111,13 @@ const manifest = {
             options: {}
         },
 
-        {
-            plugin: {
-                register: './plugins/api-commands/api-commands.js',
-                options: {}
-            },
-            options: {}
-        }
+        // {
+        //     plugin: {
+        //         register: './plugins/api-commands/api-commands.js',
+        //         options: {}
+        //     },
+        //     options: {}
+        // }
 
     ]
 };

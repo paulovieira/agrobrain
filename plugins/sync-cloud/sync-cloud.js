@@ -3,7 +3,7 @@
 plugin: sync-cloud
 description: periodically sync measurements data with agrobrain-cloud; once the syncronization is done, update the respective 'sync' field in the local db
 
-TODO: when sending the data the sync endpoint in the cloud, the client must send some credentials too
+TODO: when sending the data to the sync endpoint in the cloud, the client must send some credentials too
 */
 
 'use strict';
@@ -20,6 +20,10 @@ const Db = require('../../database');
 const Utils = require('../../utils/util');
 
 const internals = {};
+
+internals.createIdObj = function(id){
+    return { id: id };
+};
 
 internals.oneMinute = 60 * 1000;
 
@@ -59,10 +63,6 @@ exports.register = function (server, options, next){
     return next();
 };
 
-///internals.syncUrlAgg = Config.get('syncUrlAgg') + '?clientToken=' + Config.get('clientToken');
-///internals.syncUrlMeasurements = Config.get('syncUrlMeasurements') + '?clientToken=' + Config.get('clientToken');
-
-
 
 internals.wreckOptions = {
     baseUrl: 'http://' + Config.get('baseUrlCloud'),
@@ -76,18 +76,28 @@ internals.wreckOptions = {
     }
 };
 
-internals.sync = function(){
+internals.sync = function (){
 
     // parallel select queries
-    // TODO: verify the case when there are no rows returned
-    const sql = [];
-    sql.push(`select * from read_measurements(' ${ JSON.stringify({ limit: internals.options.limit }) } ')`);
-    sql.push(`select * from read_log_state('    ${ JSON.stringify({ limit: internals.options.limit }) } ')`);
+    let sql = [];
+    
+    sql.push(`
+        select * from read_measurements(' ${ JSON.stringify({ limit: internals.options.limit }) } ')
+    `);
+    
+    sql.push(`
+        select * from read_log_state('    ${ JSON.stringify({ limit: internals.options.limit }) } ')
+    `);
 
     Promise.all(sql.map((s) => Db.query(s)))
-        .spread(function(measurements, logState){
+        .spread(function (measurements, logState){
 
-            // update payload in the wreck options (the other properties are the same)
+            // if there's nothing to sync, avoid doing the http request
+            if (measurements.length === 0 && logState.length === 0){
+                return [{ statusCode: 200 }, { measurements: [], logState: [] }];
+            }
+
+            // the wreck options object is reused; we just update the payload property
             internals.wreckOptions.payload = undefined;
             internals.wreckOptions.payload = JSON.stringify({
                 measurements: measurements,
@@ -95,9 +105,6 @@ internals.sync = function(){
             });
 
             return Wreck.putAsync(internals.syncPath, internals.wreckOptions);
-
-            // TODO: promisify wreck; send data; handle response; handle error; 
-
         })
         .spread(function (response, serverPayload){
 
@@ -110,156 +117,32 @@ internals.sync = function(){
 
             // update the sync status in the local database
 
-            console.log("serverPayload: ", serverPayload);
-            //internals.updateSyncStatus('t_agg', serverPayload.agg);
-            //internals.updateSyncStatus('t_measurements', serverPayload.measurements);
-            //internals.updateSyncStatus('t_log_state', serverPayload.logState);
+            const measurements = serverPayload.measurements.map(internals.createIdObj);
+            const logState = serverPayload.logState.map(internals.createIdObj);
 
-            return;
+            sql = [];
+
+            sql.push(`
+                select * from update_sync('${ JSON.stringify(measurements)}', '${ JSON.stringify({ table_name: 't_measurements' }) }')
+            `);
+
+            sql.push(`
+                select * from update_sync('${ JSON.stringify(logState)}',     '${ JSON.stringify({ table_name: 't_log_state' }) }')
+            `);
+
+            console.log(sql)
+            return Promise.all(sql.map((s) => Db.query(s)));
         })
-        .catch(function(err){
+        .then(function (){
 
-            console.log(Object.keys(err))
+            // all done!
+        })
+        .catch(function (err){
+
+            //console.log(Object.keys(err))
             Utils.logErr(err, ['sync']);
         });
-
-/*
-    console.log(Sql.selectForSync.t_agg(internals.syncLimit))
-    console.log(Sql.selectForSync.t_measurements(internals.syncLimit))
-    console.log(Sql.selectForSync.t_log_state(internals.syncLimit))
-
-    Pg.connect(Config.get('db:postgres'), function(err, pgClient, done) {
-
-        if (err) {
-            // TODO: add to logs + email
-            internals.server.log(['error', 'execAggSync'], err.message);
-            return;
-        }
-
-        //console.log(internals.aggSyncQuery);
-        pgClient.query(internals.aggSyncQuery, function (err, result) {
-
-            if (err) {
-                internals.server.log(['error', 'execAggSync'], err.message);
-                done();
-                return;
-            }
-
-            // immediatelly reuse the same client for a second query
-            pgClient.query(internals.measurementsSyncQuery, function (err2, result2) {
-
-                if (err2) {
-                    internals.server.log(['error', 'execAggSync'], err2.message);
-                    return;
-                }
-
-                // immediatelly reuse the same client for a third query
-
-                //console.log('xyz: ', internals.logStateSyncQuery)
-                pgClient.query(internals.logStateSyncQuery, function (err3, result3) {
-
-
-                    done();
-
-                    if (err3) {
-                        internals.server.log(['error', 'execAggSync'], err3.message);
-                        return;
-                    }
-
-                    if (result.rowCount === 0 && result2.rowCount === 0 && result3.rowCount === 0){
-                        internals.server.log(['execAggSync'], 'nothing to sync');
-                        return;
-                    }
-
-                    // change date format
-                    result.rows.forEach( (obj) => { 
-                        obj.ts = obj.ts.toISOString();
-                    });
-
-                    result2.rows.forEach( (obj) => { 
-                        obj.ts = obj.ts.toISOString();
-                    });
-
-                    result3.rows.forEach( (obj) => { 
-                        obj.ts_start = obj.ts_start.toISOString();
-                        obj.ts_end   = obj.ts_end.toISOString();
-                    });
-
-                    //console.log("rows", result.rows)
-                    // console.log("rows2", result2.rows)
-                    //console.log("rows3", result3.rows)
-
-                    internals.wreckOptions.payload = undefined;
-                    internals.wreckOptions.payload = JSON.stringify({
-                        agg: result.rows,
-                        measurements: result2.rows,
-                        logState: result3.rows
-                    });
-
-                    //console.log('syncOptions: ', internals.wreckOptions);
-                    //console.log('syncOptions.payload: ', internals.wreckOptions.payload);
-
-                    Wreck.put(internals.syncUrlAgg, internals.wreckOptions, function (err, response, serverPayload){
-
-                        if (err) {
-                            internals.server.log(['error', 'execAggSync', 'wreck'], { message: err.message, payload: JSON.stringify(serverPayload) });
-                            return;
-                        }
-
-                        if (response.statusCode !== 200){
-                            
-                            internals.server.log(['error', 'execAggSync'], 'sync was not done: response from the server was not 200. server payload: ' + JSON.stringify(serverPayload));
-                            return 
-                        }
-
-                        // update the sync status in the local database
-
-                        console.log("serverPayload: ", JSON.stringify(serverPayload))
-                        internals.updateSyncStatus('t_agg', serverPayload.agg);
-                        internals.updateSyncStatus('t_measurements', serverPayload.measurements);
-                        internals.updateSyncStatus('t_log_state', serverPayload.logState);
-
-                        return;
-                    });
-                })
-            });
-        });
-    });
-*/
-
 };
-
-/*
-internals.updateSyncStatus = function (table, ids){
-
-    Pg.connect(Config.get('db:postgres'), function (err, pgClient, done) {
-
-        if (err) {
-            internals.server.log(['error', 'updateSyncStatus'], err.message);
-            return;
-        }
-
-        const updateSyncStatus = Sql.updateSyncStatus(table, ids);
-
-        pgClient.query(updateSyncStatus, function (err, result) {
-
-            done();
-
-            if (err) {
-                internals.server.log(['error', 'updateSyncStatus'], err.message);
-                return;
-            }
-
-            // if (result.rowCount === 0){
-            //     internals.server.log(['error', 'updateSyncStatus'], 'sync status was not updated');
-            //     return;
-            // }
-
-            internals.server.log(['updateSyncStatus'], 'sync status was updated');
-        });
-    });
-};
-*/
 
 exports.register.attributes = {
     name: Path.parse(__dirname).name  // use the name of the directory

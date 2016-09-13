@@ -7,7 +7,7 @@
 psql --file database/0_prerequisites/0020_pg_versioning.sql DBNAME
 
 
-2) manually insert the initial patch (this will make sure the code that creates the database is not executed)
+2) manually insert the initial patch (this will make sure the code that creates the table measurements is not executed)
 
 INSERT INTO _v.patches (
     patch_name,
@@ -17,7 +17,7 @@ INSERT INTO _v.patches (
     conflicts,
     description )
 VALUES (
-    'premiere t_measurements',
+    'premiere-t_measurements',
     now(),
     current_user,
     coalesce( NULL, '{}'::text[] ),
@@ -30,6 +30,10 @@ VALUES (
 ALTER TABLE t_log_state RENAME TO t_log_state_old;
 
 
-4) execute the script runner - it will create the new version of t_log_state
+4) execute the script runner - 
+    will create the new version of t_log_state
+    will change the column "sync" in t_measurements
+    will drop the column "agg" in t_measurements
 
 
+5) verify if there are any changes in the port

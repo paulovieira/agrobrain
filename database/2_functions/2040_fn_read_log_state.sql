@@ -4,7 +4,8 @@ DROP FUNCTION IF EXISTS read_log_state(json);
 CREATE FUNCTION read_log_state(input json)
 RETURNS TABLE(
     id int,
-    event jsonb,
+    segment state_segments,
+    data jsonb,
     ts_start timestamptz,
     ts_end timestamptz
 ) AS 
@@ -27,14 +28,14 @@ command := format('
 
 select 
     id,
-    event, 
+    segment,
+    data,
     ts_start,
     ts_end
 from t_log_state
-where sync = false
+where sync->>''cloud'' = ''false''
 order by id
 limit %s;
-
 
 ', _sync_limit);
 

@@ -10,8 +10,7 @@ RETURNS TABLE(
     description text,
     val real,
     ts timestamptz,
-    battery smallint,
-    agg bool
+    battery smallint
 ) AS 
 
 $BODY$
@@ -38,10 +37,9 @@ select
     description,
     val,
     ts,
-    battery,
-    agg
+    battery
 from t_measurements
-where sync = false
+where sync->>''cloud'' = ''false''
 order by id
 limit %s;
 
