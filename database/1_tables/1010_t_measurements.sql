@@ -1,7 +1,7 @@
 DO $$
 
 DECLARE
-patch_exists int := _v.register_patch('premiere', 'initial database design');
+patch_exists int := _v.register_patch('premiere t_measurements', 'initial database design');
 
 BEGIN
 
@@ -11,7 +11,7 @@ END IF;
 
 /*** BEGIN CODE FOR CHANGES  ***/
 
-create table if not exists t_measurements(
+create table t_measurements(
 	id serial primary key,
 
 	mac text not null,
