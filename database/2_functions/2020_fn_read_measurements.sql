@@ -27,6 +27,7 @@ BEGIN
 -- assign input data
 _limit := COALESCE((input->>'limit')::int, 500);
 
+
 command := format('
 
 select 
@@ -39,7 +40,7 @@ select
     ts,
     battery
 from t_measurements
-where sync->>''cloud'' = ''false''
+where sync->>''cloud'' is null or sync->>''cloud'' = ''false''
 order by id
 limit %s;
 

@@ -14,21 +14,21 @@ const Joi = require('joi');
 const Boom = require('boom');
 const Promise = require('bluebird');
 const Wreck = require('wreck');
-var Hoek = require('hoek');
+const Hoek = require('hoek');
 
 const Db = require('../../database');
 const Utils = require('../../utils/util');
 
 const internals = {};
 
-internals.createIdObj = function(id){
+internals.createIdObj = function (id){
     return { id: id };
 };
 
 internals.oneMinute = 60 * 1000;
 
 internals.optionsSchema = Joi.object({
-    interval: Joi.number().integer().positive(),
+    syncInterval: Joi.number().integer().positive(),
     limit: Joi.number().integer().positive(),
     path: Joi.string().min(1)
 });
@@ -44,9 +44,9 @@ exports.register = function (server, options, next){
     internals.syncPath = options.path + '?clientToken=' + Config.get('clientToken');
 
 
-    // sync data with cloud every options.interval minutes;
-    // note: timer functions are executed for the first time only after the interval has completed;
-    setInterval(internals.sync, options.interval * internals['oneMinute']);
+    // sync data with cloud every options.syncInterval minutes;
+    // note: timer functions are executed for the first time only after the given interval has completed;
+    setInterval(internals.sync, options.syncInterval * internals['oneMinute']);
 
     // test route - manual sync (to be used in dev mode only)
     server.route({
@@ -92,7 +92,8 @@ internals.sync = function (){
     Promise.all(sql.map((s) => Db.query(s)))
         .spread(function (measurements, logState){
 
-            // if there's nothing to sync, avoid doing the http request
+            // if there's nothing to sync, avoid doing the http request by skipping directly
+            // to the next step ()
             if (measurements.length === 0 && logState.length === 0){
                 return [{ statusCode: 200 }, { measurements: [], logState: [] }];
             }
@@ -115,6 +116,8 @@ internals.sync = function (){
                 throw Boom.create(response.statusCode, errorMessage, errorData);
             }
 
+            // data has been sent to the cloud; the response is an array with the ids of records that have 
+            // been saved in the database of the cloud (the same ids);
             // update the sync status in the local database
 
             const measurements = serverPayload.measurements.map(internals.createIdObj);
@@ -123,11 +126,11 @@ internals.sync = function (){
             sql = [];
 
             sql.push(`
-                select * from update_sync('${ JSON.stringify(measurements)}', '${ JSON.stringify({ table_name: 't_measurements' }) }')
+                select * from update_sync('${ JSON.stringify(measurements)}', '${ JSON.stringify({ table: 't_measurements' }) }')
             `);
 
             sql.push(`
-                select * from update_sync('${ JSON.stringify(logState)}',     '${ JSON.stringify({ table_name: 't_log_state' }) }')
+                select * from update_sync('${ JSON.stringify(logState)}',     '${ JSON.stringify({ table: 't_log_state' }) }')
             `);
 
             console.log(sql)

@@ -93,6 +93,14 @@ const manifest = {
 
         {
             plugin: {
+                register: './plugins/ws-client/ws-client.js',
+                options: Config.get('plugins:ws-client')
+            },
+            options: {}
+        },
+
+        {
+            plugin: {
                 register: './plugins/api-measurements/api-measurements.js',
                 options: Config.get('plugins:api-measurements')
             },
@@ -103,21 +111,21 @@ const manifest = {
             }
         },
 
-        {
-            plugin: {
-                register: './plugins/sync-cloud/sync-cloud.js',
-                options: Config.get('plugins:sync-cloud')
-            },
-            options: {}
-        },
-
         // {
         //     plugin: {
-        //         register: './plugins/api-commands/api-commands.js',
-        //         options: {}
+        //         register: './plugins/sync-cloud/sync-cloud.js',
+        //         options: Config.get('plugins:sync-cloud')
         //     },
         //     options: {}
-        // }
+        // },
+
+        {
+            plugin: {
+                register: './plugins/api-commands/api-commands.js',
+                options: Config.get('plugins:api-commands')
+            },
+            options: {}
+        }
 
     ]
 };
@@ -141,10 +149,11 @@ Glue.compose(manifest, glueOptions, function (err, server) {
     Hoek.assert(!err, 'Failed registration of one or more plugins: ' + err);
 
     // start the server and finish the initialization process
+    Utils.setServer(server);
+
     server.start( (err) => {
 
         Hoek.assert(!err, 'Failed server start: ' + err);
-        Utils.setServer(server);
         
         // show some basic informations about the server
         console.log(Chalk.cyan('================='));

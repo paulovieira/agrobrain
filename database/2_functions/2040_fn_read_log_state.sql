@@ -33,7 +33,7 @@ select
     ts_start,
     ts_end
 from t_log_state
-where sync->>''cloud'' = ''false''
+where sync->>''cloud'' is null or sync->>''cloud'' = ''false''
 order by id
 limit %s;
 

@@ -78,7 +78,7 @@ alter table t_measurements
 rename sync to sync_old;
 
 alter table t_measurements
-add column sync jsonb default '{ "cloud": false }';
+add column sync jsonb default '{}';
 
 update t_measurements
 set sync = jsonb_set(sync, '{cloud}', sync_old::text::jsonb);

@@ -21,7 +21,7 @@ create table t_log_state(
     ts_start timestamptz not null default now(),
     ts_end timestamptz not null default now(),
 
-    sync jsonb default '{ "cloud": false }'
+    sync jsonb default '{}'
 );
 
 /*** END CODE FOR CHANGES  ***/

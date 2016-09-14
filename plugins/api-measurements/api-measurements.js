@@ -24,7 +24,7 @@ internals.measurementSchema = Joi.object({
 });
 
 internals.optionsSchema = Joi.object({
-    pathReadings: Joi.string().default('/readings')
+    path: Joi.string().min(1)
 });
 
 exports.register = function (server, options, next){
@@ -65,7 +65,7 @@ exports.register = function (server, options, next){
     */
     
     server.route({
-        path: options.pathReadings,
+        path: options.path,
         method: 'GET',
         config: {
 

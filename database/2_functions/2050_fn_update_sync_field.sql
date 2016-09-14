@@ -25,7 +25,7 @@ for new_row in (select * from jsonb_populate_recordset(null::t_measurements, dat
 	where id = $1;
 
     ',
-    options->>'table_name'
+    options->>'table'
     );
 
     raise notice 'command: %', command;
