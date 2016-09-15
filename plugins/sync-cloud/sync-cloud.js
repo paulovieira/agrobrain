@@ -25,10 +25,9 @@ internals.createIdObj = function (id){
     return { id: id };
 };
 
-internals.oneMinute = 60 * 1000;
 
 internals.optionsSchema = Joi.object({
-    syncInterval: Joi.number().integer().positive(),
+    interval: Joi.number().integer().positive(),
     limit: Joi.number().integer().positive(),
     path: Joi.string().min(1)
 });
@@ -44,9 +43,9 @@ exports.register = function (server, options, next){
     internals.syncPath = options.path + '?clientToken=' + Config.get('clientToken');
 
 
-    // sync data with cloud every options.syncInterval minutes;
+    // sync data with cloud every options.interval minutes;
     // note: timer functions are executed for the first time only after the given interval has completed;
-    setInterval(internals.sync, options.syncInterval * internals['oneMinute']);
+    setInterval(internals.sync, options.interval);
 
     // test route - manual sync (to be used in dev mode only)
     server.route({

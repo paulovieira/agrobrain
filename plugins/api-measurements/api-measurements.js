@@ -99,7 +99,9 @@ exports.register = function (server, options, next){
                 // note: the other keys in the query string match the names of the columns
             });
 
-            const query = `select * from insert_measurements(' ${ JSON.stringify(request.query.data, null, 2) } ')`;
+            const query = `
+                select * from insert_measurements(' ${ JSON.stringify(request.query.data) } ')
+            `;
             //console.log(query);
 
             Db.query(query)
@@ -109,7 +111,7 @@ exports.register = function (server, options, next){
                 })
                 .catch(function (err){
 
-                    Utils.logErr(err);
+                    Utils.logErr(err, ['api-measurements']);
                     return reply(err);
                 });
         }

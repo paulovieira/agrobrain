@@ -1,7 +1,5 @@
 
-DROP FUNCTION IF EXISTS read_measurements(json);
-
-CREATE FUNCTION read_measurements(input json)
+CREATE OR REPLACE FUNCTION read_measurements(input json)
 RETURNS TABLE(
     id int,
     mac text,

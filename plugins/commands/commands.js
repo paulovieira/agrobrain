@@ -5,6 +5,18 @@ description: uses to websocket client created in the ws-client plugin to create 
 to the commands path (defined in the cloud server); the cloud server will send commands to change 
 the state of the gpio using that subscription
 
+TODO: 
+1) gpio is off (value 0)
+1) give a command to turn gpio on (value 1)
+2) system goes down (or restarts for some reason)
+3) system is up again
+
+what is the value of the gpio? 0 or 1? will the gpio value be 0 when it restarts? should we set it to 0 if we can (gracefull restart)?
+
+distingish cases:
+    -abrupt restart vs graceful restart
+what should we do with the gpio? set it off?
+
 */
 
 
@@ -14,18 +26,20 @@ const Path = require('path');
 const Config = require('nconf');
 const Joi = require('joi');
 const Hoek = require('hoek');
-//const Boom = require('boom');
-const Db = require('../../database');
 const Utils = require('../../utils/util');
 
 const internals = {};
 
+if (Config.get('env') === 'dev'){
+    global.dummyGpio = {
+        '23': 0
+    };
+}
+
 internals.endpoints = {
     //commands: '/api/v1/commands',
-    setState: '/api/v1/set-state'
+    //setState: '/api/v1/set-state'
 };
-
-internals.dummyCounter = 0;
 
 internals.optionsSchema = Joi.object({
     path: Joi.string().min(1)
@@ -39,7 +53,7 @@ exports.register = function (server, options, next){
 
     const client = server.plugins['ws-client'].client;
 
-    // TODO: is it ok to subscribe before the connection is established?
+    // it is ok to subscribe before the ws connection is established (?)
     client.subscribe(
 
         options.path,
@@ -59,50 +73,6 @@ exports.register = function (server, options, next){
             server.log(['api-commands'], { message: 'ws subscription established', path: options.path });
         }
     );
-/*
-    // call client.subscribe only after the client has successfully established a connection
-    const interval = 100000000;
-    const subscribeTimer = setInterval(() => {
-
-        if (!client.id){
-            return;
-        }
-        //console.log("yyyyyyyyyyyyyyyyyyyyy")
-        console.log("options: ", options)
-        client.subscribe(
-
-            options.path,
-
-            function (message, flags){
-
-                if (Config.get('env') === 'production'){
-                    internals.gpioWrite(Config.get('gpioPin'), message.command);
-                }
-                else if (Config.get('env') === 'dev'){
-                    internals.gpioWriteDummy(Config.get('gpioPin'), message.command);
-                }
-                else {
-                    throw new Error('invalid env');
-                }
-                
-            },
-
-            function (err){
-
-                if (err){
-                    Utils.logErr(err, ['api-commands']);
-                    return;
-                }
-
-                server.log(['api-commands'], { message: 'ws subscription established', path: options.path });
-            }
-        );
-
-        // clear the timer even if the there is some error related to client.subscribe
-        clearInterval(subscribeTimer);
-
-    }, interval);
-*/
 
     ///setInterval(internals.sendGpioValue, internals.gpioInterval);
 
@@ -207,53 +177,6 @@ internals.sendGpioValue = function (){
 
 
 
-internals.gpioRead = function (pin){
-
-    const command = `
-gpio mode ${ pin } out; 
-sleep 1;
-gpio read ${ pin };
-`;
-
-    if (Config.get('env') === 'dev'){
-        console.log('gpio read command:\n', command);
-
-        // simulate a reading of the gpio that changes over time
-
-        internals.dummyCounter++;
-        const lastDigit = Number(String(internals.dummyCounter).slice(-1));
-
-        let dummyGpioValue;
-        if (lastDigit >= 0 && lastDigit < 3){
-            dummyGpioValue = 0;
-        }
-        else if (lastDigit >= 3 && lastDigit < 5){
-            dummyGpioValue = 1;
-        }
-        else if (lastDigit >= 5 && lastDigit < 9){
-            dummyGpioValue = 0;
-        }
-        else if (lastDigit === 9){
-            dummyGpioValue = 1;
-        }
-
-        return dummyGpioValue;
-    }
-
-    // code for production mode starts here
-
-    let output = '';
-    try {
-        output = ChildProcess.execSync(command, { encoding: 'utf8' });
-        return output;
-    }
-    catch (err){
-        Utils.logErr(err, ['api-commands', 'gpioRead']);
-    }
-};
-
-
-
 internals.gpioWrite = function (pin, value){
 
     const command = `
@@ -263,7 +186,11 @@ gpio write ${ pin } ${ value };
 `;
 
     if (Config.get('env') === 'dev'){
-        console.log('gpio write command:\n', command);        
+
+        // set the dummy gpio
+
+        console.log('gpio write command:\n', command);
+        global.dummyGpio['' + pin] = value;
         return;
     }
 

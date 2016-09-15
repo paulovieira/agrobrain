@@ -1,3 +1,4 @@
+
 CREATE OR REPLACE FUNCTION insert_measurements(data jsonb)
 RETURNS SETOF t_measurements
 AS $$

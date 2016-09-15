@@ -121,8 +121,16 @@ const manifest = {
 
         {
             plugin: {
-                register: './plugins/api-commands/api-commands.js',
-                options: Config.get('plugins:api-commands')
+                register: './plugins/commands/commands.js',
+                options: Config.get('plugins:commands')
+            },
+            options: {}
+        },
+
+        {
+            plugin: {
+                register: './plugins/log-state/log-state.js',
+                options: Config.get('plugins:log-state')
             },
             options: {}
         }

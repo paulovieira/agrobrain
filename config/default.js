@@ -46,13 +46,16 @@ module.exports = {
         'ws-client': {
         },
 
-        'api-commands': {
+        'commands': {
         },
 
         'api-measurements': {
         },
 
         'sync-cloud': {
+        },
+
+        'log-state': {
         }
     }
 };

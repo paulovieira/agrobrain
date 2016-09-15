@@ -1,7 +1,5 @@
 
-DROP FUNCTION IF EXISTS read_log_state(json);
-
-CREATE FUNCTION read_log_state(input json)
+CREATE OR REPLACE FUNCTION read_log_state(input json)
 RETURNS TABLE(
     id int,
     segment state_segments,
@@ -24,6 +22,8 @@ BEGIN
 -- assign input data
 _sync_limit := COALESCE((input->>'syncLimit')::int, 100);
 
+-- if the "cloud" is not present in the jsonb, the expression 'sync->>''cloud'' is null'
+-- will evaluate to true
 command := format('
 
 select 

@@ -1,3 +1,4 @@
+
 CREATE OR REPLACE FUNCTION update_sync(data jsonb, options jsonb)
 RETURNS VOID
 AS $$
