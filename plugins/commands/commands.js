@@ -50,6 +50,7 @@ exports.register = function (server, options, next){
     const validatedOptions = Joi.validate(options, internals.optionsSchema);
     Hoek.assert(!validatedOptions.error, validatedOptions.error);
     options = internals.options = validatedOptions.value;
+    internals.server = server;
 
     const wsClient = server.plugins['ws-client'].client;
 
@@ -107,7 +108,7 @@ gpio write ${ pin } ${ value };
     let output = '';
     try {
         output = ChildProcess.execSync(command, { encoding: 'utf8' });
-        server.log(['commands'], { message: 'gpio value changed via execSync', command: command, output: output });
+        internals.server.log(['commands'], { message: 'gpio value changed via execSync', command: command, output: output });
     }
     catch (err){
         Utils.logErr(err, ['commands', 'gpioWrite']);
