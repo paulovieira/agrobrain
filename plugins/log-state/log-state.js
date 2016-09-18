@@ -149,7 +149,7 @@ gpio read ${ pin };
 
     try {
         const gpioValue = ChildProcess.execSync(command, { encoding: 'utf8' });
-        return gpioValue;
+        return gpioValue.trim();
     }
     catch (err){
         Utils.logErr(err, ['log-state', 'gpioRead']);
