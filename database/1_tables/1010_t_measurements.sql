@@ -91,6 +91,7 @@ $$;
 
 
 
+
 DO $$
 
 DECLARE
@@ -111,6 +112,8 @@ drop column agg cascade;
 
 END;
 $$;
+
+
 
 
 DO $$

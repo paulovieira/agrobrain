@@ -3,6 +3,8 @@
 require('./config/load');
 require('./config/promisify');
 
+const Fs = require('fs');
+const Path = require('path');
 const Config = require('nconf');
 const Glue = require('glue');
 const Hoek = require('hoek');
@@ -45,7 +47,7 @@ const manifest = {
     connections: [
         {
             address: Config.get('publicIp'),
-            port: Config.get('publicPort')
+            port: Config.get('port')
         }
     ],
 
@@ -111,13 +113,13 @@ const manifest = {
             }
         },
 
-        // {
-        //     plugin: {
-        //         register: './plugins/sync-cloud/sync-cloud.js',
-        //         options: Config.get('plugins:sync-cloud')
-        //     },
-        //     options: {}
-        // },
+        {
+            plugin: {
+                register: './plugins/sync-cloud/sync-cloud.js',
+                options: Config.get('plugins:sync-cloud')
+            },
+            options: {}
+        },
 
         {
             plugin: {
@@ -140,14 +142,26 @@ const manifest = {
 
 const glueOptions = {
     relativeTo: __dirname,
+
+    // called prior to registering plugins with the server
     preRegister: function (server, next){
 
-        //console.log('[glue]: executing preRegister (called prior to registering plugins with the server)');
-        next();
-    },
-    preConnections: function (server, next){
+        // make sure the logs directory exists
+        try {
+            Fs.mkdirSync(Path.join(Config.get('rootDir'), 'logs'));    
+        }
+        catch (err){
+            if (err.code !== 'EEXIST'){
+                throw err;
+            }
+        }
 
-        //console.log('[glue]: executing preConnections (called prior to adding connections to the server)');
+        next();       
+    },
+
+    // called prior to adding connections to the server
+    preConnections: function (server, next){
+        
         next();
     }
 };

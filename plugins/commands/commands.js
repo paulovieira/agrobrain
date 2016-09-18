@@ -37,7 +37,6 @@ if (Config.get('env') === 'dev'){
 }
 
 internals.endpoints = {
-    //commands: '/api/v1/commands',
     //setState: '/api/v1/set-state'
 };
 
@@ -51,10 +50,10 @@ exports.register = function (server, options, next){
     Hoek.assert(!validatedOptions.error, validatedOptions.error);
     options = internals.options = validatedOptions.value;
 
-    const client = server.plugins['ws-client'].client;
+    const wsClient = server.plugins['ws-client'].client;
 
     // it is ok to subscribe before the ws connection is established (?)
-    client.subscribe(
+    wsClient.subscribe(
 
         options.path,
 
@@ -66,11 +65,11 @@ exports.register = function (server, options, next){
         function (err){
 
             if (err){
-                Utils.logErr(err, ['api-commands']);
+                Utils.logErr(err, ['commands']);
                 return;
             }
 
-            server.log(['api-commands'], { message: 'ws subscription established', path: options.path });
+            server.log(['commands'], { message: 'ws subscription', path: options.path });
         }
     );
 
@@ -83,98 +82,6 @@ exports.register.attributes = {
     name: Path.parse(__dirname).name,  // use the name of the file
     dependencies: ['nes', 'ws-client']
 };
-
-
-
-
-
-// TODO: execute a pg function every n minutes which will insert/update
-// the current state of the gpio
-/*
-internals.updateLogStateOld = function (value){
-
-    Pg.connect(Config.get('db:postgres'), function (err, pgClient, done) {
-
-        if (err) {
-            internals.server.log(['error', 'updateLogState'], err.message);
-            return;
-        }
-
-        const query = `select * from update_log_state('{ "gpioState": ${ !!Number(value) }, "userId": null, "interval": ${ internals.interval } }')`;
-        console.log('query: ', query);
-        pgClient.query(query, function (err, result) {
-
-            done();
-
-            if (err) {
-                internals.server.log(['error', 'updateLogState'], err.message);
-            }
-        });
-    });
-
-};
-*/
-/*
-internals.updateLogState = function updateLogState(value){
-
-    const input = {
-        gpioState: !!Number(value),
-        userId: null,
-        interval: internals.options.gpioInterval / 1000  // the interval in postgres is defined in seconds
-        //interval: 'abc'
-    };
-
-    Db.func('update_log_state', JSON.stringify(input))
-        .catch(function (err){
-
-            Utils.logErr(err, ['updateLogState']);
-        });
-};
-*/
-/*
-internals.sendGpioValue = function (){
-
-    let value;
-    if(Config.get('env') === 'production'){
-        value = Utils.gpioRead(Config.get('gpioPin'));
-    }
-    else if(Config.get('env') === 'dev'){
-        value = Utils.gpioReadDummy(Config.get('gpioPin'));
-    }
-    else{
-        throw new Error('invalid env value');
-    }
-
-    internals.updateLogState(value);
-
-    const options = {
-        path: internals.endpoints.setState,
-        method: 'PUT',
-        payload: JSON.stringify({ 
-            state: value,
-            updatedAt: new Date().toISOString()
-        })
-    };
-
-    internals.client.request(options, function (err, serverPayload, stateCode){
-
-        if (err){
-            internals.server.log(['error', 'api-commands', 'request'], { message: err.message, type: err.type } );
-            return;
-        }
-
-        if (stateCode !== 200){
-            internals.server.log(['error', 'api-commands', 'request'], 'state code is not 200');
-            return;
-        }
-
-        internals.server.log(['api-commands', 'request'], serverPayload);
-        return;
-    });
-
-};
-*/
-
 
 
 internals.gpioWrite = function (pin, value){

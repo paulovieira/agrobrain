@@ -15,15 +15,10 @@ const Boom = require('boom');
 const Promise = require('bluebird');
 const Wreck = require('wreck');
 const Hoek = require('hoek');
-
 const Db = require('../../database');
 const Utils = require('../../utils/util');
 
 const internals = {};
-
-internals.createIdObj = function (id){
-    return { id: id };
-};
 
 
 internals.optionsSchema = Joi.object({
@@ -81,11 +76,15 @@ internals.sync = function (){
     let sql = [];
     
     sql.push(`
-        select * from read_measurements(' ${ JSON.stringify({ limit: internals.options.limit }) } ')
+        select * from read_measurements(
+            '${ JSON.stringify({ limit: internals.options.limit }) }'
+        )
     `);
     
     sql.push(`
-        select * from read_log_state('    ${ JSON.stringify({ limit: internals.options.limit }) } ')
+        select * from read_log_state(
+            '${ JSON.stringify({ limit: internals.options.limit }) }'
+        )
     `);
 
     Promise.all(sql.map((s) => Db.query(s)))
@@ -115,24 +114,27 @@ internals.sync = function (){
                 throw Boom.create(response.statusCode, errorMessage, errorData);
             }
 
-            // data has been sent to the cloud; the response is an array with the ids of records that have 
-            // been saved in the database of the cloud (the same ids);
-            // update the sync status in the local database
-
-            const measurements = serverPayload.measurements.map(internals.createIdObj);
-            const logState = serverPayload.logState.map(internals.createIdObj);
+            // data has been sent to the cloud, the response is an array of objects with the 
+            // ids of records that have been saved in the cloud db (which are the same ids)
+            
+            // update the cloud sync status to true for those ids (in the local db)
 
             sql = [];
 
             sql.push(`
-                select * from update_sync('${ JSON.stringify(measurements)}', '${ JSON.stringify({ table: 't_measurements' }) }')
+                select * from update_sync(
+                    '${ JSON.stringify(serverPayload.measurements) }', 
+                    '${ JSON.stringify({ table: 't_measurements' }) }'
+                )
             `);
 
             sql.push(`
-                select * from update_sync('${ JSON.stringify(logState)}',     '${ JSON.stringify({ table: 't_log_state' }) }')
+                select * from update_sync(
+                    '${ JSON.stringify(serverPayload.logState) }',
+                    '${ JSON.stringify({ table: 't_log_state' }) }'
+                )
             `);
 
-            console.log(sql)
             return Promise.all(sql.map((s) => Db.query(s)));
         })
         .then(function (){
@@ -142,7 +144,7 @@ internals.sync = function (){
         .catch(function (err){
 
             //console.log(Object.keys(err))
-            Utils.logErr(err, ['sync']);
+            Utils.logErr(err, ['sync-cloud', 'sync']);
         });
 };
 

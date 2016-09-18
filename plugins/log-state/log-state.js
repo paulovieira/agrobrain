@@ -22,12 +22,13 @@ internals.gpioPin = Config.get('gpioPin');
 
 internals.optionsSchema = Joi.object({
     intervalGpio: Joi.number().integer().positive(),
+    pathGpio: Joi.string().min(1),
     intervalConnectivity: Joi.number().integer().positive(),
     intervalCloud: Joi.number().integer().positive(),
     waitAppRestart: Joi.number().integer().positive()
 });
 
-internals.dummyCounter=0;
+internals.dummyCounter = 0;
 exports.register = function (server, options, next){
 
     const validatedOptions = Joi.validate(options, internals.optionsSchema);
@@ -37,11 +38,14 @@ exports.register = function (server, options, next){
     // make some properties available to the other functions in the module
     internals.server = server;
     internals.syncPath = options.path + '?clientToken=' + Config.get('clientToken');
+    internals.wsClient = server.plugins['ws-client'].client;
 
-    // log the application restart (but wait some seconds to make sure the db connection is established)
+    // log the application restart (but wait some seconds to make sure the connection 
+    // to the local db is ready)
     setTimeout(internals.updateLogAppRestart, options.waitAppRestart);
 
-    // read gpio, log in the db and in the ws subscription
+    // read gpio, update in the db and send to the cloud so that any ws clients
+    // running the browser receive live updates of the state
     setInterval(internals.updateLogGpio, options.intervalGpio);
 
     // check connectivity, update in the db
@@ -65,7 +69,7 @@ internals.updateLogAppRestart = function () {
     Db.query(query)
         .catch(function (err){
 
-            Utils.logErr(err, ['log-state', 'app-restart']);
+            Utils.logErr(err, ['log-state', 'updateLogAppRestart']);
         });        
 };
 
@@ -73,9 +77,39 @@ internals.updateLogGpio = function () {
 
     const gpioValue = internals.readGpio(internals.gpioPin);
     if (gpioValue === null){
-        // the error has already been logged
+        // the error has already been logged in the above call
         return;
     }
+
+
+    // 1. update the gpio in any eventual ws client running in the browser
+    // (those clients are connected to the ws subscription path '/api/v1/state')
+    // to update we must do a 'PUT /api/v1/state' using the ws client that is already
+    // available (altough it could be done using a traditional http request using wreck)
+
+    const options = {
+        path: internals.options.pathGpio,
+        method: 'PUT',
+        payload: { 
+            state: gpioValue,
+            updatedAt: new Date()
+        }
+    };
+
+    internals.wsClient.request(options, function (err, serverPayload, stateCode){
+
+        if (err){
+            Utils.logErr(err, ['log-state', 'updateLogGpio']);
+            return;
+        }
+
+        if (stateCode !== 200){
+            internals.server.log(['error', 'log-state', 'updateLogGpio'], 'state code is not 200');
+            return;
+        }
+    });
+
+    // 2. save the gpio state in the local db
 
     const input = { 
         segment: 'gpio',
@@ -90,7 +124,7 @@ internals.updateLogGpio = function () {
     Db.query(query)
         .catch(function (err){
 
-            Utils.logErr(err, ['log-state', 'gpio']);
+            Utils.logErr(err, ['log-state', 'updateLogGpio']);
         });        
 };
 
@@ -117,7 +151,7 @@ gpio read ${ pin };
         return gpioValue;
     }
     catch (err){
-        Utils.logErr(err, ['api-commands', 'gpioRead']);
+        Utils.logErr(err, ['log-state', 'gpioRead']);
         return null;
     }
 };
@@ -127,9 +161,11 @@ internals.updateLogConnectivity = function () {
     let connectivityValue;
 
     let websiteThatIsAlwaysAvailable = 'https://google.com/';
-    if(internals.dummyCounter++ > 4){
-        websiteThatIsAlwaysAvailable = 'https://googlefiuwebfuwebfiuwf.com/'
-    }
+
+    // if(internals.dummyCounter++ > 4){
+    //     websiteThatIsAlwaysAvailable = 'https://googlefiuwebfuwebfiuwf.com/'
+    // }
+
     Wreck.getAsync(websiteThatIsAlwaysAvailable)
         .spread((res, payload) => {
 
@@ -153,9 +189,9 @@ internals.updateLogConnectivity = function () {
             Db.query(query)
                 .catch(function (err){
 
-                    Utils.logErr(err, ['log-state', 'connectivity']);
+                    Utils.logErr(err, ['log-state', 'updateLogConnectivity']);
                 });        
-        })
+        });
 
 };
 

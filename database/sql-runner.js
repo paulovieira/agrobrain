@@ -1,3 +1,8 @@
+/*
+TODO: the sql runner should execute the patches in alphabetical order, and also 
+take into account the dependencies and incompatibilities
+*/
+
 'use strict';
 
 require('../config/load');

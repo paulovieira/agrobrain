@@ -7,8 +7,8 @@ module.exports = {
     rootDir: Path.resolve(__dirname, '..'),
     applicationTitle: 'agrobrain-local',
 
+    port: '',
     publicIp: '',
-    publicPort: '',
 
     clientToken: '',
     gpioPin: '',

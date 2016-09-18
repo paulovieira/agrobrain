@@ -20,7 +20,7 @@ internals.measurementSchema = Joi.object({
     value: Joi.number().required(),
     // if more measurement types are added, we have to update here and in the sql template
     type: Joi.string().valid('t', 'h').required(),
-    desc: Joi.string()
+    desc: Joi.string().allow([''])
 });
 
 internals.optionsSchema = Joi.object({
@@ -62,6 +62,8 @@ exports.register = function (server, options, next){
         -d 'mac=aa-bb-cc&battery=294.12&data[0][sid]=1&data[0][value]=20.1&data[0][type]=t&data[0][desc]=microfone_1'  \
         http://$AGROBRAIN_LOCAL_SEVER:8001/api/v1/readings
 
+
+    TODO: make sure the validation rule will still pass with empty description (or missing)
     */
     
     server.route({

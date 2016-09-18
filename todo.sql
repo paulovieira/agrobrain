@@ -40,5 +40,3 @@ ALTER TABLE t_log_state RENAME TO t_log_state_old;
 
 
 
-## 160914
--make the plugin to register the state

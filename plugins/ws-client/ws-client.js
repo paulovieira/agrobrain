@@ -26,6 +26,8 @@ TODO: when connecting we should send some kind of credentials ('auth' property)
 'use strict';
 
 const Path = require('path');
+const Joi = require('joi');
+const Hoek = require('hoek');
 const Nes = require('nes');
 const Config = require('nconf');
 const Utils = require('../../utils/util');
@@ -40,7 +42,15 @@ internals.connectOptions = {
     // timeout: ...
 };
 
+internals.optionsSchema = Joi.object({
+    interval: Joi.number().integer().positive()
+});
+
 exports.register = function (server, options, next){
+
+    const validatedOptions = Joi.validate(options, internals.optionsSchema);
+    Hoek.assert(!validatedOptions.error, validatedOptions.error);
+    options = internals.options = validatedOptions.value;
 
     const client = new Nes.Client('ws://' + Config.get('baseUrlCloud') /*, { timeout: 5000 }*/);
     client.onError = internals.onError;
@@ -52,12 +62,10 @@ exports.register = function (server, options, next){
 
     // the websocket client will be used in other plugins
     server.expose('client', internals.client);
-    console.log("can get reference to the client")
 
     // establish the websocket connection only after the server has started (is it really necessary?)
     server.ext('onPostStart', function (server2, next2){
 
-        const interval = Config.get('env') === 'dev' ? 1000 : 15000;
         const initialConnectionTimer = setInterval(() => {
 
             client.connect(internals.connectOptions , function (err){
@@ -74,7 +82,7 @@ exports.register = function (server, options, next){
                 clearInterval(initialConnectionTimer);
             });
 
-        }, interval);
+        }, options.interval);
     });
 
     return next();
