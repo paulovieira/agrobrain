@@ -139,7 +139,9 @@ internals.sync = function (){
         })
         .then(function (){
 
-            // all done!
+            // TO BE DONE - we can now delete entries that have been synced
+            // (where date is from last week, for instance)
+
         })
         .catch(function (err){
 

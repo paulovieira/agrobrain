@@ -66,8 +66,10 @@ internals.createFunctions = function (){
 
 
 Psql.configure({
+    port: Config.get('db:postgres:database'),
     dbname: Config.get('db:postgres:database'),
     username: Config.get('db:postgres:username')
+
 });
 
 internals.createPreRequisites();

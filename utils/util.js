@@ -22,6 +22,7 @@ module.exports.logErr = function (err, tags){
 
     let errType = 'general';
 
+    // duck typing
     for (let key in err){
         if (key === 'name'){
             errType = 'postgres';
