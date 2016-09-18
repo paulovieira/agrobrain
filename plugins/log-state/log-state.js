@@ -9,7 +9,7 @@ TODO: log the "cloud" segment
 'use strict';
 
 const Path = require('path');
-const ChildProcess = require('path');
+const ChildProcess = require('child_process');
 const Config = require('nconf');
 const Joi = require('joi');
 const Wreck = require('wreck');
