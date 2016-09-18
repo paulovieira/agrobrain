@@ -66,7 +66,7 @@ internals.createFunctions = function (){
 
 
 Psql.configure({
-    port: Config.get('db:postgres:database'),
+    port: Config.get('db:postgres:port'),
     dbname: Config.get('db:postgres:database'),
     username: Config.get('db:postgres:username')
 
