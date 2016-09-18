@@ -58,8 +58,7 @@ end if;
 
 --raise notice 'insert_new_record: %', insert_new_record;
 
--- if the data of the last record for this segment (after the last restart row) is the same, 
--- just update ts_end; else, insert new record
+
 if insert_new_record = true then
 	
 	insert into t_log_state(segment, data, ts_start, ts_end) 
@@ -72,7 +71,8 @@ if insert_new_record = true then
 		where id = last_row_segment.id;
 
 	end if;		
-
+-- if the data of the last record for this segment (after the last restart row) is the same, 
+-- just update ts_end and sync
 else 
 
 	update t_log_state 

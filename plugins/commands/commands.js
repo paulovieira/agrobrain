@@ -23,6 +23,7 @@ what should we do with the gpio? set it off?
 'use strict';
 
 const Path = require('path');
+const ChildProcess = require('child_process');
 const Config = require('nconf');
 const Joi = require('joi');
 const Hoek = require('hoek');
@@ -106,9 +107,10 @@ gpio write ${ pin } ${ value };
     let output = '';
     try {
         output = ChildProcess.execSync(command, { encoding: 'utf8' });
-        return output;
+        server.log(['commands'], { message: 'gpio value changed via execSync', command: command, output: output });
     }
     catch (err){
-        console.log(err.message);
+        Utils.logErr(err, ['commands', 'gpioWrite']);
+        return null;
     }
 };
