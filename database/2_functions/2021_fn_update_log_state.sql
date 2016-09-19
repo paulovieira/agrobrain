@@ -8,6 +8,7 @@ last_row_segment  t_log_state%ROWTYPE;
 last_row_restart  t_log_state%ROWTYPE;
 now               timestamptz := now();
 insert_new_record bool;
+count int;
 
 -- variables for input data
 _segment state_segments;
@@ -16,14 +17,17 @@ _data jsonb;
 BEGIN
 
 -- assign input data; 
-
 -- the value in "segment" must be one of the entries in the enum (if not an error will be raised)
-_segment := input_obj->>'segment';
-_data    := input_obj->>'data';
 
-if _segment is null or _data is null then
-    RAISE EXCEPTION 'Required properties: "segment", "data"';
-end if;
+_segment := COALESCE(input_obj->>'segment', '');
+_data    := COALESCE(input_obj->>'data', '{}');
+
+-- get the the number of properties in the data object
+select count(*) from jsonb_object_keys(_data) into count;
+
+if count = 0 then
+     RAISE EXCEPTION 'the "data" object must have some properties';
+ end if;
 
 -- for a gpio state, make sure a default userId is present
 if _segment = 'gpio' and _data->>'userId' is null then

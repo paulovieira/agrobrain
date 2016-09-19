@@ -94,14 +94,16 @@ where
 		when type = 't' then 70
 		when type = 'h' then 101
 		else 99999
-		end)		
+		end)
+	and ts >= '2016-01-01' and ts <= '2016-12-31'
 order by ts
 
 
 
 -- aggregated select by time interval (based in the above query)
 select 
-	date_trunc('hour', ts) as time, 
+	--date_trunc('hour', ts) as time, 
+	date_trunc('day', ts) + (date_part('hour', ts)::int / 1) * interval '1 hour' AS time,
 	mac, 
 	sid, 
 	type, 
@@ -122,7 +124,7 @@ where
 		when type = 'h' then 101
 		else 99999
 		end)	
-		
+	and ts >= '2016-01-01' and ts <= '2016-12-31'
 group by time, mac, sid, type
 order by time
 
@@ -132,7 +134,9 @@ order by time
 with agg_by_time as (
 
 	select 
-		date_trunc('hour', ts) as time, 
+		--date_trunc('hour', ts) as time, 
+		--date_trunc('day', ts) + (date_part('hour', ts)::int / 1) * interval '1 hour' AS time,
+		date_trunc('day', ts) + (date_part('hour', ts)::int / 12) * interval '12 hour' AS time,
 		mac, 
 		sid, 
 		type, 
@@ -152,7 +156,8 @@ with agg_by_time as (
 			when type = 't' then 60
 			when type = 'h' then 101
 			else 99999
-			end)	
+			end)
+		and ts >= '2016-01-01' and ts <= '2016-12-31'
 			
 	group by time, mac, sid, type
 	order by time
