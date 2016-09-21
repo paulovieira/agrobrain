@@ -8,23 +8,23 @@ RETURNS TABLE(
     ts_end timestamptz
 ) AS 
 
-$BODY$
+$fn$
 
 DECLARE
 
-command text;
+query text;
 
 -- variables for input data
-_sync_limit int;
+_limit int;
 
 BEGIN
 
 -- assign input data
-_sync_limit := COALESCE((input->>'syncLimit')::int, 100);
+_limit := COALESCE((input->>'limit')::int, 500);
 
--- if the "cloud" is not present in the jsonb, the expression 'sync->>''cloud'' is null'
--- will evaluate to true
-command := format('
+-- if the "cloud" property is not present in the jsonb, the expression 'sync->>''cloud'' is null
+
+query := $$
 
 select 
     id,
@@ -33,26 +33,26 @@ select
     ts_start,
     ts_end
 from t_log_state
-where sync->>''cloud'' is null or sync->>''cloud'' = ''false''
+where sync->>'cloud' is null or sync->>'cloud' = 'false'
 order by id
-limit %s;
+limit $1;
 
-', _sync_limit);
+$$;
+--raise notice 'query: %', query;   
 
---raise notice 'command: %', command;   
-
-RETURN QUERY EXECUTE command;
+RETURN QUERY EXECUTE query
+USING _limit;
 RETURN;
 
 END;
 
-$BODY$
+$fn$
 
 LANGUAGE plpgsql;
 
 /*
 
 select * from read_log_state('{}');
-select * from read_log_state('{ "syncLimit": 5}');
+select * from read_log_state('{ "limit": 5}');
 
 */

@@ -71,8 +71,5 @@ module.exports.logErr = function (err, tags){
 
     logObj['stack'] = err['stack'];
 
-    //console.log("logObj: ", logObj)
-    //console.log("tags: ", tags)
-
     internals.server.log(tags, logObj);
 };

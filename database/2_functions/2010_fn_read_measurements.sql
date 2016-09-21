@@ -11,11 +11,11 @@ RETURNS TABLE(
     battery smallint
 ) AS 
 
-$BODY$
+$fn$
 
 DECLARE
 
-command text;
+query text;
 
 -- variables for input data
 _limit int;
@@ -25,8 +25,7 @@ BEGIN
 -- assign input data
 _limit := COALESCE((input->>'limit')::int, 500);
 
-
-command := format('
+query := $$
 
 select 
     id,
@@ -38,20 +37,22 @@ select
     ts,
     battery
 from t_measurements
-where sync->>''cloud'' is null or sync->>''cloud'' = ''false''
+where sync->>'cloud' is null or sync->>'cloud' = 'false'
 order by id
-limit %s;
+limit $1;
 
-', _limit);
+$$;
 
---raise notice 'command: %', command;	
+--raise notice 'query: %', query;	
 
-RETURN QUERY EXECUTE command;
+RETURN QUERY EXECUTE query
+USING _limit;
+
 RETURN;
 
 END;
 
-$BODY$
+$fn$
 
 LANGUAGE plpgsql;
 

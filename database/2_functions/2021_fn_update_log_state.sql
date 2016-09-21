@@ -1,7 +1,7 @@
 
 CREATE OR REPLACE FUNCTION update_log_state(input_obj jsonb)
 RETURNS void AS
-$BODY$
+$fn$
 DECLARE
 
 last_row_segment  t_log_state%ROWTYPE;
@@ -89,7 +89,7 @@ end if;
 
 
 END;
-$BODY$
+$fn$
 LANGUAGE plpgsql;
 
 /*

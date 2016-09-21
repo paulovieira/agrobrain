@@ -1,7 +1,7 @@
 
 CREATE OR REPLACE FUNCTION insert_measurements(data jsonb)
 RETURNS SETOF t_measurements
-AS $$
+AS $fn$
 
 DECLARE
 new_row t_measurements%rowtype;
@@ -41,7 +41,7 @@ end loop;
 return;
 
 END;
-$$
+$fn$
 LANGUAGE plpgsql;
 
 
