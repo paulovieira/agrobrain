@@ -15,11 +15,13 @@ create type job_types as enum ('irrigation_on', 'irrigation_off');
 
 create table t_queue( 
     id serial primary key,
-    job_type job_types,
+
+    job_type job_types not null,
     data jsonb default '{}',
     ts_created timestamptz not null default now(),
-    delay int default 1, -- delay to execute the job
+    delay int default 1, -- delay to execute the job, in minutes
     ts_executed timestamptz,
+
     sync jsonb default '{}'
 );
 
